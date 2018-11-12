@@ -81,24 +81,29 @@ def read_neurone_protocol(fpath):
     session = docroot.findall("xmlns:TableSession", namespaces=ns2)
     time_start = session[0].findall("xmlns:StartDateTime", namespaces=ns2)[0].text
     time_stop = session[0].findall("xmlns:StopDateTime", namespaces=ns2)[0].text
-    phases = [phase.findall("xmlns:Folder", namespaces=ns2)[0].text.split("\\")[-1] for phase in docroot.findall("xmlns:TableSessionPhase", namespaces=ns2)]
+    phases = [{ 'number': phase.findall("xmlns:Folder", namespaces=ns2)[0].text.split("\\")[-1],
+                'time_start': phase.findall("xmlns:StartDateTime", namespaces=ns2)[0].text,
+                'time_stop': phase.findall("xmlns:StopDateTime", namespaces=ns2)[0].text }
+              for phase in docroot.findall("xmlns:TableSessionPhase", namespaces=ns2)]
 
     # --------------------------------------------------
     # Package the information
     # --------------------------------------------------
     meta = {}
-
-    tstart = time_start[0:time_start.index('+')]
-    tstop = time_stop[0:time_stop.index('+')]
-
-    if (len(tstart) > 26):
-        tstart = tstart[0:26]
-    if (len(tstop) > 26):
-        tstop = tstop[0:26]
+    
+    def convert_time(tstr):
+        tstr = tstr[0:tstr.index('+')]
+        if (len(tstr) > 26):
+            tstr = tstr[0:26]
+        return datetime.strptime(tstr, "%Y-%m-%dT%H:%M:%S.%f")
         
-    meta["time_start"] = datetime.strptime(tstart, "%Y-%m-%dT%H:%M:%S.%f")
-    meta["time_stop"] = datetime.strptime(tstop, "%Y-%m-%dT%H:%M:%S.%f")
+    meta["time_start"] = convert_time(time_start)
+    meta["time_stop"] = convert_time(time_stop)
     meta["sampling_rate"] = sampling_rate
+    
+    for phase in phases:
+        phase['time_start'] = convert_time(phase['time_start'])
+        phase['time_stop'] = convert_time(phase['time_stop'])
 
     return {'channels' : channel_names, 'meta' : meta, 'phases': phases}
 

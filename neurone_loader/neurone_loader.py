@@ -14,10 +14,12 @@ from .lazy import lazy, preloadable
 
 @preloadable
 class Phase:
-    def __init__(self, path, number, protocol=None):
+    def __init__(self, path, phase, protocol=None):
         self.path = path
-        self.number = number
+        self.number = phase['number']
         self._protocol = protocol
+        self.time_start = phase['time_start']
+        self.time_stop = phase['time_stop']
     
     @lazy
     def events(self):
@@ -43,11 +45,36 @@ class Session:
         self.sampling_rate = self._protocol['meta']['sampling_rate']
         self.time_start = self._protocol['meta']['time_start']
         self.time_stop = self._protocol['meta']['time_stop']
-        self.phases = [Phase(self.path, n, self._protocol) for n in self._protocol['phases']]
+        self.phases = [Phase(self.path, p, self._protocol) for p in self._protocol['phases']]
     
     @lazy
     def event_codes(self):
         return np.unique(np.concatenate([phase.event_codes for phase in self.phases]))
+    
+    @lazy
+    def data(self):
+        phases = sorted(self.phases, key=lambda p: p.number)
+        return np.concatenate([p.data for p in phases])
+    
+    @lazy
+    def events(self):
+        phases = sorted(self.phases, key=lambda p: p.number)
+        if len(phases) > 0:
+            all_events = [phases[0].events]
+            current_samples = phases[0].data.shape[0]
+            for i in range(1, len(phases)):
+                if len(phases[i].events) > 0:
+                    cur_events = phases[i].events.copy()
+                    cur_events['StartSampleIndex'] += current_samples
+                    cur_events['StopSampleIndex'] += current_samples
+                    cur_time = int(current_samples / self.sampling_rate)
+                    cur_events['StartTime'] += cur_time
+                    cur_events['StopTime'] += cur_time
+                    current_samples += phases[i].data.shape[0]
+                    all_events.append(cur_events)
+            return pd.concat(all_events)
+        else:
+            return pd.DataFrame()
 
 @preloadable
 class Recording:
@@ -68,3 +95,31 @@ class Recording:
     @lazy
     def event_codes(self):
         return np.unique(np.concatenate([session.event_codes for session in self.sessions]))
+    
+    @lazy
+    def data(self):
+        sessions = sorted(self.sessions, key=lambda x: x.time_start)
+        return np.concatenate([s.data for s in sessions])
+    
+    @lazy
+    def events(self):
+        sessions = sorted(self.sessions, key=lambda x: x.time_start)
+        if len(sessions) > 0:
+            assert len(set([s.sampling_rate for s in sessions])) >= 1, \
+                   'Loading Sessions with different sampling rates is not supported at this time'
+            sampling_rate = sessions[0].sampling_rate
+            all_events = [sessions[0].events]
+            current_samples = sessions[0].data.shape[0]
+            for i in range(1, len(sessions)):
+                if len(sessions[i].events) > 0:
+                    cur_events = sessions[i].events.copy()
+                    cur_events['StartSampleIndex'] += current_samples
+                    cur_events['StopSampleIndex'] += current_samples
+                    cur_time = int(current_samples / sampling_rate)
+                    cur_events['StartTime'] += cur_time
+                    cur_events['StopTime'] += cur_time
+                    current_samples += sessions[i].data.shape[0]
+                    all_events.append(cur_events)
+            return pd.concat(all_events)
+        else:
+            return pd.DataFrame()

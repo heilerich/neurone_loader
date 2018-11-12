@@ -53,7 +53,7 @@ def preloadable(cls):
                     
         for attr in [attr for attr in dir(self) if not attr.startswith('__')]:
             possible_prop = getattr(obj_type, attr, None)
-            if isinstance(possible_prop, property):
+            if isinstance(possible_prop, lazy):
                 if not hasattr(self, possible_prop.private_name):
                     logger.debug('Preloading property {} of {}'.format(attr,self))
                     getattr(self, attr)
