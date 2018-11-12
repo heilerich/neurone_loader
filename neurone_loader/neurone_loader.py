@@ -9,8 +9,8 @@
 import os
 import pandas as pd
 import numpy as np
-import utilities_neurone as nr
-from lazy import lazy, preloadable
+from . import utilities_neurone as nr
+from .lazy import lazy, preloadable
 
 @preloadable
 class Phase:

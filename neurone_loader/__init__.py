@@ -6,4 +6,4 @@
 # http://opensource.org/licenses/mit-license.php
 # Please see the file LICENSE for details.
 
-from neurone_loader import Recording, Session, Phase
+from .neurone_loader import Recording, Session, Phase
