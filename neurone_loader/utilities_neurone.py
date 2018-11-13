@@ -25,6 +25,8 @@ from construct import Struct, Int32sl, Int64ul
 
 from datetime import datetime
 
+from collections import namedtuple
+
 def read_neurone_protocol(fpath):
     """
     Read the measurement protocol from an XML file.
@@ -140,9 +142,7 @@ def read_neurone_data(fpath, session_phase = 1, protocol = None):
         protocol = read_neurone_protocol(fpath)
     
     # Determine number of samples to read
-    f_info = path.getsize(fname)
-    n_channels = len(protocol['channels'])
-    n_samples = int(f_info / 4 / n_channels)
+    n_samples, n_channels = read_neurone_data_info(fpath, session_phase, protocol)
 
     # Read the data and store the data
     # in an ndarray
@@ -151,6 +151,48 @@ def read_neurone_data(fpath, session_phase = 1, protocol = None):
         data.shape = (n_samples, n_channels)
 
     return data
+
+def read_neurone_data_info(fpath, session_phase = 1, protocol = None):
+    """
+    Read the sample and channel count from a NeurOne signal binary file.
+
+    Arguments:
+       - fpath : the path to the directory holding the
+                 NeurOne measurement (i.e., the
+                 directory Protocol.xml and Session.xml
+                 files.
+
+       - session_phase :
+                 The phase of the measurement. Currently
+                 only reading of the first phase (1) is
+                 supported.
+
+       - protocol :
+                  The dictionary obtained using the function
+                  read_neurone_protocol. This argument is optional
+                  and if not given, the protocol is automatically read.
+                    
+    Returns:
+       Returns:
+       - a named tuple containing (i) the number of channels
+         and (ii) the number of samples in the recording.
+
+        ( n_samples, n_channels )
+    """
+
+    fname = path.join(fpath, str(session_phase), '1.bin')
+
+    # Read the protocol unless provided
+    if protocol is None:
+        protocol = read_neurone_protocol(fpath)
+    
+    # Determine number of samples and channels
+    f_info = path.getsize(fname)
+    n_channels = len(protocol['channels'])
+    n_samples = int(f_info / 4 / n_channels)
+    
+    DataInfo = namedtuple('DataInfo', ['n_samples', 'n_channels'])
+    return DataInfo( n_samples, n_channels)
 
 
 def get_n1_event_format():

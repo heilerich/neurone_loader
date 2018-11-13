@@ -32,7 +32,16 @@ class Phase:
     @lazy
     def data(self):
         return nr.read_neurone_data(self.path, self.number, self._protocol)
-        
+    
+    @lazy
+    def n_samples(self):
+        return nr.read_neurone_data_info(self.path, self.number, self._protocol).n_samples
+    
+    @lazy
+    def n_channels(self):
+        return nr.read_neurone_data_info(self.path, self.number, self._protocol).n_channels
+
+
 @preloadable
 class Session:
     def __init__(self, path):
@@ -61,7 +70,7 @@ class Session:
         phases = sorted(self.phases, key=lambda p: p.number)
         if len(phases) > 0:
             all_events = [phases[0].events]
-            current_samples = phases[0].data.shape[0]
+            current_samples = phases[0].n_samples
             for i in range(1, len(phases)):
                 if len(phases[i].events) > 0:
                     cur_events = phases[i].events.copy()
@@ -70,11 +79,22 @@ class Session:
                     cur_time = int(current_samples / self.sampling_rate)
                     cur_events['StartTime'] += cur_time
                     cur_events['StopTime'] += cur_time
-                    current_samples += phases[i].data.shape[0]
+                    current_samples += phases[i].n_samples
                     all_events.append(cur_events)
             return pd.concat(all_events)
         else:
             return pd.DataFrame()
+        
+    @lazy
+    def n_samples(self):
+        return sum([p.n_samples for p in self.phases])
+    
+    @lazy
+    def n_channels(self):
+        assert len(set([p.n_channels for p in self.phases])) <= 1, \
+               "The number of channels shouldn't change between phases"
+        return self.phases[0].n_channels if len(self.phases) > 0 else 0
+
 
 @preloadable
 class Recording:
@@ -109,7 +129,7 @@ class Recording:
                    'Loading Sessions with different sampling rates is not supported at this time'
             sampling_rate = sessions[0].sampling_rate
             all_events = [sessions[0].events]
-            current_samples = sessions[0].data.shape[0]
+            current_samples = sessions[0].n_samples
             for i in range(1, len(sessions)):
                 if len(sessions[i].events) > 0:
                     cur_events = sessions[i].events.copy()
@@ -118,8 +138,18 @@ class Recording:
                     cur_time = int(current_samples / sampling_rate)
                     cur_events['StartTime'] += cur_time
                     cur_events['StopTime'] += cur_time
-                    current_samples += sessions[i].data.shape[0]
+                    current_samples += sessions[i].n_samples
                     all_events.append(cur_events)
             return pd.concat(all_events)
         else:
             return pd.DataFrame()
+        
+    @lazy
+    def n_samples(self):
+        return sum([s.n_samples for s in self.sessions])
+    
+    @lazy
+    def n_channels(self):
+        assert len(set([s.n_channels for s in self.sessions])) <= 1, \
+               "The number of channels shouldn't change between sessions"
+        return self.sessions[0].n_channels if len(self.sessions) > 0 else 0
