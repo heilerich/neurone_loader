@@ -174,6 +174,6 @@ class Recording(BaseContainer):
 
     @property
     def channels(self):
-        assert len(set([s.channels for s in self.sessions])) <= 1, \
+        assert len(set([''.join(s.channels) for s in self.sessions])) <= 1, \
                "Channel names shouldn't change between sessions"
         return self.sessions[0].channels if len(self.sessions) > 0 else 0
