@@ -11,27 +11,40 @@ import pandas as pd
 import numpy as np
 from . import utilities_neurone as nr
 from .lazy import lazy, preloadable
+from .mne_export import MneExportable
+
+class BaseContainer(MneExportable):
+    def __init__(self):
+        if hasattr(self, '_protocol'):
+            self.sampling_rate = self._protocol['meta']['sampling_rate']
+            self.channels = self._protocol['channels']
 
 @preloadable
-class Phase:
+class Phase(BaseContainer):
+    """
+    Properties:
+        - data: recorded data with shape (samples, channels) in µV
+    """
     def __init__(self, path, phase, protocol=None):
         self.path = path
         self.number = phase['number']
         self._protocol = protocol
+        super().__init__()
         self.time_start = phase['time_start']
         self.time_stop = phase['time_stop']
+
     
     @lazy
     def events(self):
-        return pd.DataFrame(nr.read_neurone_events(self.path, self.number, self._protocol['meta']['sampling_rate'])['events'])
+        return pd.DataFrame(nr.read_neurone_events(self.path, self.number, self.sampling_rate)['events'])
     
-    @lazy
+    @property
     def event_codes(self):
         return np.unique(self.events['Code'].values) if 'Code' in self.events else []
     
     @lazy
     def data(self):
-        return nr.read_neurone_data(self.path, self.number, self._protocol)
+        return nr.read_neurone_data(self.path, self.number, self._protocol) / 1000 #data is nanovolts
     
     @lazy
     def n_samples(self):
@@ -43,29 +56,28 @@ class Phase:
 
 
 @preloadable
-class Session:
+class Session(BaseContainer):
     def __init__(self, path):
         self.path = path
-        self._get_meta()
-        
-    def _get_meta(self):
         self._protocol = nr.read_neurone_protocol(self.path)
-        self.channels = self._protocol['channels']
-        self.sampling_rate = self._protocol['meta']['sampling_rate']
+        super().__init__()
+        self._get_meta()
+
+    def _get_meta(self):
         self.time_start = self._protocol['meta']['time_start']
         self.time_stop = self._protocol['meta']['time_stop']
         self.phases = [Phase(self.path, p, self._protocol) for p in self._protocol['phases']]
-    
-    @lazy
+
+    @property
     def event_codes(self):
         return np.unique(np.concatenate([phase.event_codes for phase in self.phases]))
-    
-    @lazy
+
+    @property
     def data(self):
         phases = sorted(self.phases, key=lambda p: p.number)
         return np.concatenate([p.data for p in phases])
-    
-    @lazy
+
+    @property
     def events(self):
         phases = sorted(self.phases, key=lambda p: p.number)
         if len(phases) > 0:
@@ -85,11 +97,11 @@ class Session:
         else:
             return pd.DataFrame()
         
-    @lazy
+    @property
     def n_samples(self):
         return sum([p.n_samples for p in self.phases])
-    
-    @lazy
+
+    @property
     def n_channels(self):
         assert len(set([p.n_channels for p in self.phases])) <= 1, \
                "The number of channels shouldn't change between phases"
@@ -97,7 +109,7 @@ class Session:
 
 
 @preloadable
-class Recording:
+class Recording(BaseContainer):
     """
     A recording
     """
@@ -111,17 +123,17 @@ class Recording:
                         if os.path.isdir(os.path.join(self.path, dirname)) 
                             and 'Protocol.xml' in os.listdir(os.path.join(self.path, dirname))]
         self.sessions = [Session(path) for path in session_dirs]
-    
-    @lazy
+
+    @property
     def event_codes(self):
         return np.unique(np.concatenate([session.event_codes for session in self.sessions]))
-    
-    @lazy
+
+    @property
     def data(self):
         sessions = sorted(self.sessions, key=lambda x: x.time_start)
         return np.concatenate([s.data for s in sessions])
-    
-    @lazy
+
+    @property
     def events(self):
         sessions = sorted(self.sessions, key=lambda x: x.time_start)
         if len(sessions) > 0:
@@ -143,13 +155,25 @@ class Recording:
             return pd.concat(all_events)
         else:
             return pd.DataFrame()
-        
-    @lazy
+
+    @property
     def n_samples(self):
         return sum([s.n_samples for s in self.sessions])
-    
-    @lazy
+
+    @property
     def n_channels(self):
         assert len(set([s.n_channels for s in self.sessions])) <= 1, \
                "The number of channels shouldn't change between sessions"
         return self.sessions[0].n_channels if len(self.sessions) > 0 else 0
+
+    @property
+    def sampling_rate(self):
+        assert len(set([s.sampling_rate for s in self.sessions])) <= 1, \
+               "The sampling rate shouldn't change between sessions"
+        return self.sessions[0].sampling_rate if len(self.sessions) > 0 else 0
+
+    @property
+    def channels(self):
+        assert len(set([s.channels for s in self.sessions])) <= 1, \
+               "Channel names shouldn't change between sessions"
+        return self.sessions[0].channels if len(self.sessions) > 0 else 0
