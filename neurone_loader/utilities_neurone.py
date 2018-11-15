@@ -1,14 +1,13 @@
-# This file is part of neurone_loader
-# (https://www.github.com/heilerich/neurone_loader)
-# Copyright © 2018 Felix Heilmeyer.
-# 
-# This file contains code originally from export2hdf5
-# Created by Andreas Henelius <andreas.henelius@ttl.fi>,
-# Finnish Institute of Occupational Health
-#
-# This code is released under the MIT License
-# http://opensource.org/licenses/mit-license.php
-# Please see the file LICENSE for details.
+# ------------------------------------------------------------------------------
+#  This file (utilities_neurone.py) is part of neurone_loader                  -
+#  (https://www.github.com/heilerich/neurone_loader)                           -
+#  Copyright © 2018 Felix Heilmeyer.                                           -
+#                                                                              -
+#  This code is released under the MIT License                                 -
+#  https://opensource.org/licenses/mit-license.php                             -
+#  Please see the file LICENSE for details.                                    -
+# ------------------------------------------------------------------------------
+
 
 """
 This module contains functions for reading data from a
@@ -60,16 +59,18 @@ def read_neurone_protocol(fpath):
     # Get channel names and organise them according to their
     # physical order (InputNumber), which is the order
     # in which the channels are being sampled.
-    docroot = xml.etree.ElementTree.parse(fname_protocol).getroot()
-    channels = docroot.findall("xmlns:TableInput", namespaces=ns)
-    channel_names = ['']*len(channels)
+    doc_root = xml.etree.ElementTree.parse(fname_protocol).getroot()
+    channels = doc_root.findall("xmlns:TableInput", namespaces=ns)
+    channel_names = [(0, 0)] * len(channels)
 
-    for i,ch in enumerate(channels):
-        channel_names[i] = (int(ch.findall("xmlns:PhysicalInputNumber", namespaces=ns)[0].text), ch.findall("xmlns:Name", namespaces=ns)[0].text)
-    channel_names = [i for _,i in sorted(channel_names)]
+    for i, ch in enumerate(channels):
+        channel_names[i] = (int(ch.findall("xmlns:PhysicalInputNumber", namespaces=ns)[0].text),
+                            ch.findall("xmlns:Name", namespaces=ns)[0].text)
+    channel_names = [i for _, i in sorted(channel_names)]
 
     # Get the sampling rate
-    sampling_rate = int(docroot.findall("xmlns:TableProtocol", namespaces=ns)[0].findall("xmlns:ActualSamplingFrequency", namespaces=ns)[0].text)
+    sampling_rate = int(doc_root.findall("xmlns:TableProtocol", namespaces=ns)[0]
+                        .findall("xmlns:ActualSamplingFrequency", namespaces=ns)[0].text)
 
     # --------------------------------------------------
     # Read the session data
@@ -80,38 +81,38 @@ def read_neurone_protocol(fpath):
     # Get channel names and organise them according to their
     # physical order (InputNumber), which is the order
     # in which the channels are being sampled.
-    docroot = xml.etree.ElementTree.parse(fname_session).getroot()
-    session = docroot.findall("xmlns:TableSession", namespaces=ns2)
+    doc_root = xml.etree.ElementTree.parse(fname_session).getroot()
+    session = doc_root.findall("xmlns:TableSession", namespaces=ns2)
     time_start = session[0].findall("xmlns:StartDateTime", namespaces=ns2)[0].text
     time_stop = session[0].findall("xmlns:StopDateTime", namespaces=ns2)[0].text
-    phases = [{ 'number': phase.findall("xmlns:Folder", namespaces=ns2)[0].text.split("\\")[-1],
-                'time_start': phase.findall("xmlns:StartDateTime", namespaces=ns2)[0].text,
-                'time_stop': phase.findall("xmlns:StopDateTime", namespaces=ns2)[0].text }
-              for phase in docroot.findall("xmlns:TableSessionPhase", namespaces=ns2)]
+    phases = [{'number': phase.findall("xmlns:Folder", namespaces=ns2)[0].text.split("\\")[-1],
+               'time_start': phase.findall("xmlns:StartDateTime", namespaces=ns2)[0].text,
+               'time_stop': phase.findall("xmlns:StopDateTime", namespaces=ns2)[0].text}
+              for phase in doc_root.findall("xmlns:TableSessionPhase", namespaces=ns2)]
 
     # --------------------------------------------------
     # Package the information
     # --------------------------------------------------
     meta = {}
-    
-    def convert_time(tstr):
-        tstr = tstr[0:tstr.index('+')]
-        if (len(tstr) > 26):
-            tstr = tstr[0:26]
-        return datetime.strptime(tstr, "%Y-%m-%dT%H:%M:%S.%f")
-        
-    meta["time_start"] = convert_time(time_start)
-    meta["time_stop"] = convert_time(time_stop)
+
+    def _convert_time(time_str):
+        time_str = time_str[0:time_str.index('+')]
+        if len(time_str) > 26:
+            time_str = time_str[0:26]
+        return datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%f")
+
+    meta["time_start"] = _convert_time(time_start)
+    meta["time_stop"] = _convert_time(time_stop)
     meta["sampling_rate"] = sampling_rate
     
     for phase in phases:
-        phase['time_start'] = convert_time(phase['time_start'])
-        phase['time_stop'] = convert_time(phase['time_stop'])
+        phase['time_start'] = _convert_time(phase['time_start'])
+        phase['time_stop'] = _convert_time(phase['time_stop'])
 
-    return {'channels' : channel_names, 'meta' : meta, 'phases': phases}
+    return {'channels': channel_names, 'meta': meta, 'phases': phases}
 
 
-def read_neurone_data(fpath, session_phase = 1, protocol = None):
+def read_neurone_data(fpath, session_phase=1, protocol=None):
     """
     Read the NeurOne signal data from a binary file.
 
@@ -147,14 +148,13 @@ def read_neurone_data(fpath, session_phase = 1, protocol = None):
 
     # Read the data and store the data
     # in an ndarray
-    with open(fname, mode='rb') as file:
-        data = np.fromfile(fname, dtype='<i4')
-        data.shape = (n_samples, n_channels)
+    data = np.fromfile(fname, dtype='<i4')
+    data.shape = (n_samples, n_channels)
 
     return data
 
 
-def read_neurone_data_info(fpath, session_phase = 1, protocol = None):
+def read_neurone_data_info(fpath, session_phase=1, protocol=None):
     """
     Read the sample and channel count from a NeurOne signal binary file.
 
@@ -194,7 +194,7 @@ def read_neurone_data_info(fpath, session_phase = 1, protocol = None):
     n_samples = int(f_info / 4 / n_channels)
     
     DataInfo = namedtuple('DataInfo', ['n_samples', 'n_channels'])
-    return DataInfo( n_samples, n_channels)
+    return DataInfo(n_samples, n_channels)
 
 
 def get_n1_event_format():
@@ -209,26 +209,28 @@ def get_n1_event_format():
     """
 
     # Define the data format of the events
+    # noinspection PyUnresolvedReferences
     return Struct(
-        "Revision"          / Int32sl,
-        "RFU1"              / Int32sl,
-        "Type"              / Int32sl,
-        "SourcePort"        / Int32sl,
-        "ChannelNumber"     / Int32sl,
-        "Code"              / Int32sl,
-        "StartSampleIndex"  / Int64ul,
-        "StopSampleIndex"   / Int64ul,
+        "Revision" / Int32sl,
+        "RFU1" / Int32sl,
+        "Type" / Int32sl,
+        "SourcePort" / Int32sl,
+        "ChannelNumber" / Int32sl,
+        "Code" / Int32sl,
+        "StartSampleIndex" / Int64ul,
+        "StopSampleIndex" / Int64ul,
         "DescriptionLength" / Int64ul,
         "DescriptionOffset" / Int64ul,
-        "DataLength"        / Int64ul,
-        "DataOffset"        / Int64ul,
-        "RFU2"              / Int32sl,
-        "RFU3"              / Int32sl,
-        "RFU4"              / Int32sl,
-        "RFU5"              / Int32sl)
+        "DataLength" / Int64ul,
+        "DataOffset" / Int64ul,
+        "RFU2" / Int32sl,
+        "RFU3" / Int32sl,
+        "RFU4" / Int32sl,
+        "RFU5" / Int32sl
+    )
 
 
-def read_neurone_events(fpath, session_phase = 1, sampling_rate = None):
+def read_neurone_events(fpath, session_phase=1, sampling_rate=None):
     """
     Read the NeurOne events from a binary file.
 
@@ -264,15 +266,15 @@ def read_neurone_events(fpath, session_phase = 1, sampling_rate = None):
     # Determine number of events
     f_info = path.getsize(fname)
     n_events = int(f_info / 88)
-    events = [''] * n_events
+    events = [{}] * n_events
 
     # Read events in chunks of 88 bytes and unpack
     # also add start / stop time for each event
     # and remove 'reserved for future use' (RFU) fields
-    format = get_n1_event_format()
+    event_format = get_n1_event_format()
     with open(fname, mode='rb') as file:
         for i in range(n_events):
-            events[i] = format.parse(file.read(88))
+            events[i] = event_format.parse(file.read(88))
             events[i]['StartTime'] = events[i]['StartSampleIndex'] / sampling_rate
             events[i]['StopTime'] = events[i]['StopSampleIndex'] / sampling_rate
             for j in range(5):
@@ -280,166 +282,25 @@ def read_neurone_events(fpath, session_phase = 1, sampling_rate = None):
             del events[i]['_io']
 
     # Create a numpy structured array from the events
-    events_dtype = np.dtype([("Revision"          , np.int32),
-                             ("Type"              , np.int32),
-                             ("SourcePort"        , np.int32),
-                             ("ChannelNumber"     , np.int32),
-                             ("Code"              , np.int32),
-                             ("StartSampleIndex"  , np.int64),
-                             ("StopSampleIndex"   , np.int64),
-                             ("DescriptionLength" , np.int64),
-                             ("DescriptionOffset" , np.int64),
-                             ("DataLength"        , np.int64),
-                             ("DataOffset"        , np.int64),
-                             ("StartTime"         , np.int64),
-                             ("StopTime"          , np.int64) ])
+    events_dtype = np.dtype([("Revision", np.int32),
+                             ("Type", np.int32),
+                             ("SourcePort", np.int32),
+                             ("ChannelNumber", np.int32),
+                             ("Code", np.int32),
+                             ("StartSampleIndex", np.int64),
+                             ("StopSampleIndex", np.int64),
+                             ("DescriptionLength", np.int64),
+                             ("DescriptionOffset", np.int64),
+                             ("DataLength", np.int64),
+                             ("DataOffset", np.int64),
+                             ("StartTime", np.int64),
+                             ("StopTime", np.int64)])
 
     # convert array of event dicts to an array of tuples
     if len(events) == 0:
         return {'events': [], 'dtype': []}
-    keylist = [k for k, v in events[0].items()]
-    tmp =  [tuple([e[k] for k in keylist]) for e in events]
-    events = np.array(tmp, dtype = events_dtype)
+    key_list = [k for k, v in events[0].items()]
+    tmp = [tuple([e[k] for k in key_list]) for e in events]
+    events = np.array(tmp, dtype=events_dtype)
 
-    return {'events' : events, 'dtype' : events_dtype}
-
-
-def write_neurone_events(fname, events):
-    """
-    Write neurone events.
-
-    Arguments:
-       - fname : the file to write the events to (will be overwritten)
-
-       - events : an array of dicts, each dict containing one event.
-         Each event has the following fields (here with example data):
-              Revision = 5
-              Type = 4
-              SourcePort = 3
-              ChannelNumber = 0
-              Code = 2
-              StartSampleIndex = 224042
-              StopSampleIndex = 224042
-              DescriptionLength = 0
-              DescriptionOffset = 0
-              DataLength = 0
-              DataOffset = 0
-
-              Note that fields RFU0 to RFU5 are automatically added.
-
-    Returns:
-       - nothing
-    """
-
-    format = get_n1_event_format()
-
-    with open(fname, mode='wb') as file:
-        for e in events:
-            for j in range(5):
-                e['RFU' + str(j+1)] = 0
-                file.write(format.build(e))
-
-
-def read_neurone(fpath):
-    """
-    Read the neurone data.
-
-    Arguments:
-       - fpath : the path to the directory holding the
-                 NeurOne measurement (i.e., the
-                 directory Protocol.xml and Session.xml
-                 files.
-    Returns:
-       - a dictionary containing the data, events and the
-         data type (numpy dtype) for the events.
-
-    {"data" : <the signal data>,
-    "events" : <the events>,
-    "events_dtype" : <event data type>}
-    """
-
-    # Read the protocol
-    protocol = read_neurone_protocol(fpath)
-
-    # Read the signal data
-    data = read_neurone_data(fpath, session_phase = 1, protocol = protocol)
-
-    # Read the events
-    events = read_neurone_events(fpath, session_phase = 1, sampling_rate = float(protocol['meta']['sampling_rate']))
-
-    # Create a time vector
-    timevec = np.array(range(data.shape[0])) / float(protocol['meta']['sampling_rate'])
-
-    out = [0] * len(protocol["channels"])
-    for i, label in enumerate(protocol["channels"]):
-        data_out =  {}
-        data_out[label] = data[:,i]
-        data_out["time"] = timevec
-        out[i] = {"meta" : protocol["meta"], "data" : data_out}
-
-    return {"data" : out, "events" : events['events'], "events_dtype" : events['dtype']}
-
-
-def read_neurone_data_hdf5(fpath):
-    """
-    Read the neurone data in a format compatible with the
-    HDF5-exporting function export_hdf5.
-
-    Arguments:
-       - fpath : the path to the directory holding the
-                 NeurOne measurement (i.e., the
-                 directory Protocol.xml and Session.xml
-                 files.
-    Returns:
-       - a list of dictionaries, where each dictionary
-         represents a feature as a time series ("signal")
-    {"meta" : <dict with metadata>,
-    "data" : {"time" : [...], "<channelname" : [...] }}
-    """
-
-    # Read the protocol
-    protocol = read_neurone_protocol(fpath)
-
-    # Read the signal data
-    data = read_neurone_data(fpath, session_phase = 1, protocol = protocol)
-
-    # Create a time vector
-    timevec = np.array(range(data.shape[0])) / float(protocol['meta']['sampling_rate'])
-
-    out = [0] * len(protocol["channels"])
-    for i, label in enumerate(protocol["channels"]):
-        data_out =  {}
-        data_out[label] = data[:,i]
-        data_out["time"] = timevec
-        out[i] = {"meta" : protocol["meta"], "data" : data_out}
-
-    return out
-
-
-def read_neurone_events_hdf5(fpath):
-    """
-    Read the neurone events in a format compatible with the
-    HDF5-exporting function export_hdf5.
-
-    Arguments:
-       - fpath : the path to the directory holding the
-                 NeurOne measurement (i.e., the
-                 directory Protocol.xml and Session.xml
-                 files.
-    Returns:
-       - A dict containing the events and the data type for the events.
-
-    {"events" : <numpy structured array with the events>,
-    "events_dtype" : <array with the numpy dtype for the events>}
-    """
-
-    # Read the protocol
-    protocol = read_neurone_protocol(fpath)
-
-    # Read the signal data
-    data = read_neurone_data(fpath, session_phase = 1, protocol = protocol)
-
-    # Read the events
-    events = read_neurone_events(fpath, session_phase = 1, sampling_rate = float(protocol['meta']['sampling_rate']))
-
-    return events
+    return {'events': events, 'dtype': events_dtype}

@@ -1,3 +1,13 @@
+# ------------------------------------------------------------------------------
+#  This file (test_lazy.py) is part of neurone_loader                          -
+#  (https://www.github.com/heilerich/neurone_loader)                           -
+#  Copyright © 2018 Felix Heilmeyer.                                           -
+#                                                                              -
+#  This code is released under the MIT License                                 -
+#  https://opensource.org/licenses/mit-license.php                             -
+#  Please see the file LICENSE for details.                                    -
+# ------------------------------------------------------------------------------
+
 from unittest import TestCase
 
 from neurone_loader.lazy import Lazy, preloadable
@@ -52,7 +62,7 @@ class TestLazy(TestCase):
 
 class TestExplicitLazy(TestLazy):
     def setUp(self):
-        super().setUp()
+        TestLazy.setUp(self)
         test_data = self.test_data
 
         class ExplicitTestClass:

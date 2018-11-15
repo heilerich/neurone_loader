@@ -1,10 +1,12 @@
-# This file is part of neurone_loader
-# (https://www.github.com/heilerich/neurone_loader)
-# Copyright © 2018 Felix Heilmeyer.
-#
-# This code is released under the MIT License
-# http://opensource.org/licenses/mit-license.php
-# Please see the file LICENSE for details.
+# ------------------------------------------------------------------------------
+#  This file (lazy.py) is part of neurone_loader                               -
+#  (https://www.github.com/heilerich/neurone_loader)                           -
+#  Copyright © 2018 Felix Heilmeyer.                                           -
+#                                                                              -
+#  This code is released under the MIT License                                 -
+#  https://opensource.org/licenses/mit-license.php                             -
+#  Please see the file LICENSE for details.                                    -
+# ------------------------------------------------------------------------------
 
 import logging
 from functools import update_wrapper
@@ -17,7 +19,7 @@ class Lazy(property):
     def __init__(self, fget=None, fset=None, fdel=None, doc=None):
         self.private_name = "_{}".format(fget.__name__)
         doc = doc or fget.__doc__
-        super().__init__(fget=fget, fset=fset, fdel=fdel, doc=doc)
+        property.__init__(self, fget=fget, fset=fset, fdel=fdel, doc=doc)
         # noinspection PyTypeChecker
         update_wrapper(self, fget)
 
