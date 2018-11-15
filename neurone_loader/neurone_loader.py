@@ -10,14 +10,16 @@ import os
 import pandas as pd
 import numpy as np
 from . import utilities_neurone as nr
-from .lazy import lazy, preloadable
+from .lazy import Lazy, preloadable
 from .mne_export import MneExportable
+
 
 class BaseContainer(MneExportable):
     def __init__(self):
         if hasattr(self, '_protocol'):
             self.sampling_rate = self._protocol['meta']['sampling_rate']
             self.channels = self._protocol['channels']
+
 
 @preloadable
 class Phase(BaseContainer):
@@ -33,24 +35,23 @@ class Phase(BaseContainer):
         self.time_start = phase['time_start']
         self.time_stop = phase['time_stop']
 
-    
-    @lazy
+    @Lazy
     def events(self):
         return pd.DataFrame(nr.read_neurone_events(self.path, self.number, self.sampling_rate)['events'])
     
     @property
     def event_codes(self):
         return np.unique(self.events['Code'].values) if 'Code' in self.events else []
-    
-    @lazy
+
+    @Lazy
     def data(self):
         return nr.read_neurone_data(self.path, self.number, self._protocol) / 1000 #data is nanovolts
-    
-    @lazy
+
+    @Lazy
     def n_samples(self):
         return nr.read_neurone_data_info(self.path, self.number, self._protocol).n_samples
-    
-    @lazy
+
+    @Lazy
     def n_channels(self):
         return nr.read_neurone_data_info(self.path, self.number, self._protocol).n_channels
 

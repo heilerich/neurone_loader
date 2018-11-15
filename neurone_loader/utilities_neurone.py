@@ -27,6 +27,7 @@ from datetime import datetime
 
 from collections import namedtuple
 
+
 def read_neurone_protocol(fpath):
     """
     Read the measurement protocol from an XML file.
@@ -151,6 +152,7 @@ def read_neurone_data(fpath, session_phase = 1, protocol = None):
         data.shape = (n_samples, n_channels)
 
     return data
+
 
 def read_neurone_data_info(fpath, session_phase = 1, protocol = None):
     """
@@ -377,6 +379,7 @@ def read_neurone(fpath):
 
     return {"data" : out, "events" : events['events'], "events_dtype" : events['dtype']}
 
+
 def read_neurone_data_hdf5(fpath):
     """
     Read the neurone data in a format compatible with the
@@ -411,6 +414,7 @@ def read_neurone_data_hdf5(fpath):
         out[i] = {"meta" : protocol["meta"], "data" : data_out}
 
     return out
+
 
 def read_neurone_events_hdf5(fpath):
     """

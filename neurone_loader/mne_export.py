@@ -11,6 +11,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+
 class MneExportable:
     def _import_mne(self):
         try:
