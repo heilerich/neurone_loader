@@ -7,20 +7,19 @@
 # Please see the file LICENSE for details.
 
 import logging
-from functools import update_wrapper, wraps
+from functools import update_wrapper
 
 logger = logging.getLogger(__name__)
 
 
 # noinspection PyMethodOverriding
 class Lazy(property):
-    def __init__(self, method, fget=None, fset=None, fdel=None, doc=None):
-        self.method = method
-        self.private_name = "_{}".format(self.method.__name__)
-        doc = doc or method.__doc__
+    def __init__(self, fget=None, fset=None, fdel=None, doc=None):
+        self.private_name = "_{}".format(fget.__name__)
+        doc = doc or fget.__doc__
         super().__init__(fget=fget, fset=fset, fdel=fdel, doc=doc)
         # noinspection PyTypeChecker
-        update_wrapper(self, method)
+        update_wrapper(self, fget)
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -28,27 +27,28 @@ class Lazy(property):
         if hasattr(instance, self.private_name):
             result = getattr(instance, self.private_name)
         else:
-            logger.debug('(Lazy) loading {}.{}'.format(owner.__name__, self.method.__name__))
-            if self.fget is not None:
-                # noinspection PyArgumentList
-                result = self.fget(instance)
-            else:
-                result = self.method(instance)
+            logger.debug('(Lazy) loading {}.{}'.format(owner.__name__, self.fget.__name__))
+            # noinspection PyArgumentList
+            result = self.fget(self)
             setattr(instance, self.private_name, result)
         return result
 
     def __set__(self, instance, value):
-        if instance is None:
-            raise AttributeError
         if self.fset is None:
             setattr(instance, self.private_name, value)
         else:
             # noinspection PyArgumentList
             self.fset(instance, value)
 
+    def __delete__(self, instance):
+        if self.fdel is None:
+            delattr(instance, self.private_name)
+        else:
+            # noinspection PyArgumentList
+            self.fdel(instance)
+
 
 def preloadable(cls):
-    @wraps(cls)
     def preload(self):
         obj_type = type(self)
 
@@ -56,7 +56,7 @@ def preloadable(cls):
             if hasattr(obj, 'preload'):
                 preload_function = getattr(obj, 'preload')
                 if callable(preload_function):
-                    attr_obj.preload()
+                    obj.preload()
                     
         for attr in [attr for attr in dir(self) if not attr.startswith('__')]:
             possible_prop = getattr(obj_type, attr, None)
