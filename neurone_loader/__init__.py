@@ -8,4 +8,4 @@
 #  Please see the file LICENSE for details.                                    -
 # ------------------------------------------------------------------------------
 
-from .neurone_loader import Recording, Session, Phase
+from .loader import Recording, Session, Phase

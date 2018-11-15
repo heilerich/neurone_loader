@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-#  This file (neurone_loader.py) is part of neurone_loader                     -
+#  This file (loader.py) is part of neurone_loader                             -
 #  (https://www.github.com/heilerich/neurone_loader)                           -
 #  Copyright © 2018 Felix Heilmeyer.                                           -
 #                                                                              -
@@ -11,7 +11,7 @@
 import os
 import pandas as pd
 import numpy as np
-from . import utilities_neurone as nr
+from . import neurone as nr
 from .lazy import Lazy, preloadable
 from .mne_export import MneExportable
 
