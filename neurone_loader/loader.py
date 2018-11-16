@@ -47,7 +47,7 @@ class Phase(BaseContainer):
 
     @Lazy
     def data(self):
-        return nr.read_neurone_data(self.path, self.number, self._protocol) / 1000 #data is nanovolts
+        return nr.read_neurone_data(self.path, self.number, self._protocol) / 1000  # data is nanovolts
 
     @Lazy
     def n_samples(self):
@@ -69,6 +69,8 @@ class Session(BaseContainer):
     def _get_meta(self):
         self.time_start = self._protocol['meta']['time_start']
         self.time_stop = self._protocol['meta']['time_stop']
+        assert len(self._protocol['phases']) > 0, \
+            "Session at {} has no phases".format(self.path)
         self.phases = [Phase(self.path, p, self._protocol) for p in self._protocol['phases']]
 
     @property
@@ -83,22 +85,19 @@ class Session(BaseContainer):
     @property
     def events(self):
         phases = sorted(self.phases, key=lambda p: p.number)
-        if len(phases) > 0:
-            all_events = [phases[0].events]
-            current_samples = phases[0].n_samples
-            for i in range(1, len(phases)):
-                if len(phases[i].events) > 0:
-                    cur_events = phases[i].events.copy()
-                    cur_events['StartSampleIndex'] += current_samples
-                    cur_events['StopSampleIndex'] += current_samples
-                    cur_time = int(current_samples / self.sampling_rate)
-                    cur_events['StartTime'] += cur_time
-                    cur_events['StopTime'] += cur_time
-                    current_samples += phases[i].n_samples
-                    all_events.append(cur_events)
-            return pd.concat(all_events)
-        else:
-            return pd.DataFrame()
+        all_events = [phases[0].events]
+        current_samples = phases[0].n_samples
+        for i in range(1, len(phases)):
+            if len(phases[i].events) > 0:
+                cur_events = phases[i].events.copy()
+                cur_events['StartSampleIndex'] += current_samples
+                cur_events['StopSampleIndex'] += current_samples
+                cur_time = int(current_samples / self.sampling_rate)
+                cur_events['StartTime'] += cur_time
+                cur_events['StopTime'] += cur_time
+                current_samples += phases[i].n_samples
+                all_events.append(cur_events)
+        return pd.concat(all_events)
         
     @property
     def n_samples(self):
@@ -122,9 +121,10 @@ class Recording(BaseContainer):
         
     def _find_sessions(self):
         session_dirs = [os.path.join(self.path, dirname)
-                        for dirname in os.listdir(self.path) 
-                        if os.path.isdir(os.path.join(self.path, dirname)) 
-                            and 'Protocol.xml' in os.listdir(os.path.join(self.path, dirname))]
+                        for dirname in os.listdir(self.path)
+                        if os.path.isdir(os.path.join(self.path, dirname))
+                        and 'Protocol.xml' in os.listdir(os.path.join(self.path, dirname))]
+        assert len(session_dirs) > 0, "No sessions found in {}".format(self.path)
         self.sessions = [Session(path) for path in session_dirs]
 
     @property
@@ -139,25 +139,22 @@ class Recording(BaseContainer):
     @property
     def events(self):
         sessions = sorted(self.sessions, key=lambda x: x.time_start)
-        if len(sessions) > 0:
-            assert len(set([s.sampling_rate for s in sessions])) >= 1, \
-                   'Loading Sessions with different sampling rates is not supported at this time'
-            sampling_rate = sessions[0].sampling_rate
-            all_events = [sessions[0].events]
-            current_samples = sessions[0].n_samples
-            for i in range(1, len(sessions)):
-                if len(sessions[i].events) > 0:
-                    cur_events = sessions[i].events.copy()
-                    cur_events['StartSampleIndex'] += current_samples
-                    cur_events['StopSampleIndex'] += current_samples
-                    cur_time = int(current_samples / sampling_rate)
-                    cur_events['StartTime'] += cur_time
-                    cur_events['StopTime'] += cur_time
-                    current_samples += sessions[i].n_samples
-                    all_events.append(cur_events)
-            return pd.concat(all_events)
-        else:
-            return pd.DataFrame()
+        assert len(set([s.sampling_rate for s in sessions])) >= 1, \
+            'Loading Sessions with different sampling rates is not supported at this time'
+        sampling_rate = sessions[0].sampling_rate
+        all_events = [sessions[0].events]
+        current_samples = sessions[0].n_samples
+        for i in range(1, len(sessions)):
+            if len(sessions[i].events) > 0:
+                cur_events = sessions[i].events.copy()
+                cur_events['StartSampleIndex'] += current_samples
+                cur_events['StopSampleIndex'] += current_samples
+                cur_time = int(current_samples / sampling_rate)
+                cur_events['StartTime'] += cur_time
+                cur_events['StopTime'] += cur_time
+                current_samples += sessions[i].n_samples
+                all_events.append(cur_events)
+        return pd.concat(all_events)
 
     @property
     def n_samples(self):

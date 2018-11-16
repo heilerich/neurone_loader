@@ -31,7 +31,7 @@ class Lazy(property):
         else:
             logger.debug('(Lazy) loading {}.{}'.format(owner.__name__, self.fget.__name__))
             # noinspection PyArgumentList
-            result = self.fget(self)
+            result = self.fget(instance)
             setattr(instance, self.private_name, result)
         return result
 
