@@ -75,9 +75,12 @@ class MneExportable(abc.ABC):
                          "and all its dependencies.")
             return False
 
-    def to_mne(self):
+    def to_mne(self, substitute_zero_events_with=None):
         """
         Convert loaded data to a mne.io.RawArray
+        :param substitute_zero_events_with: events with code = 0 are not supported by MNE, if this parameter is set, the
+        event code 0 will be substituted with this parameter
+        :type substitute_zero_events_with: None (default) or int
         :return: the converted data
         :rtype: mne.io.RawArray
         :raises ImportError: if the mne package is not installed
@@ -98,18 +101,52 @@ class MneExportable(abc.ABC):
 
         cnt = mne.io.RawArray(data, info)
 
-        stim_channel = np.zeros_like(cnt.get_data()[0])
         ssc = [(start, stop, code) for (start, stop, code)
                in events[['StartSampleIndex', 'StopSampleIndex', 'Code']].values]
 
-        for start, stop, code in ssc:
-            stim_channel[start:stop+1] += code
+        if substitute_zero_events_with is not None:
+            event_codes = np.unique(events['Code'].values)
+            assert type(substitute_zero_events_with) is int, 'substitute_zero_events_with must be int or None'
+            assert substitute_zero_events_with not in event_codes, \
+                "the original data can't contain event with code substitute_zero_events_with ({})" \
+                    .format(substitute_zero_events_with)
 
-        stim_info = mne.create_info(ch_names=['STI 014'],
+        stim_channel_names = ['STI 014']
+        stim_channels = [np.zeros_like(cnt.get_data()[0])]
+
+        def _add_stim_channel():
+            index = len(stim_channel_names)
+            stim_channel_names.append('STI {:03g}'.format(index + 14))
+            stim_channels.append(np.zeros_like(cnt.get_data()[0]))
+
+        for start, stop, code in ssc:
+            channel_index = 0
+            if substitute_zero_events_with is not None:
+                if code == 0:
+                    code = substitute_zero_events_with
+            else:
+                assert code != 0, "events with event code 0 are not supported by MNE, use the " \
+                                  "substitute_zero_events_with parameter of this method to substitute with an " \
+                                  "alternative code"
+
+            while not (stim_channels[channel_index][start:stop + 1] == 0).all():
+                channel_index += 1
+                if channel_index >= len(stim_channels):
+                    _add_stim_channel()
+
+            if channel_index != 0:
+                logger.warning('Event (code {current_code}) has a concurrent event between samples ({start}) and '
+                               '({stop}). An additional stim channel will be used/created: ({channel}).'
+                               .format(current_code=code, start=start, stop=stop,
+                                       channel=stim_channel_names[channel_index]))
+
+            stim_channels[channel_index][start:stop + 1] += code
+
+        stim_info = mne.create_info(ch_names=stim_channel_names,
                                     sfreq=self.sampling_rate,
                                     ch_types='stim')
 
-        stim_cnt = mne.io.RawArray([stim_channel], stim_info, verbose='WARNING')
+        stim_cnt = mne.io.RawArray(stim_channels, stim_info, verbose='WARNING')
 
         cnt = cnt.add_channels([stim_cnt])
 

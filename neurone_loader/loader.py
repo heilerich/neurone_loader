@@ -17,10 +17,13 @@ from .mne_export import MneExportable
 
 
 class BaseContainer(MneExportable):
-    def __init__(self):
-        if hasattr(self, '_protocol'):
-            self.sampling_rate = self._protocol['meta']['sampling_rate']
-            self.channels = self._protocol['channels']
+    @property
+    def sampling_rate(self):
+        return self._protocol['meta']['sampling_rate'] if hasattr(self, '_protocol') else None
+
+    @property
+    def channels(self):
+        return self._protocol['channels'] if hasattr(self, '_protocol') else None
 
 
 @preloadable
@@ -33,7 +36,6 @@ class Phase(BaseContainer):
         self.path = path
         self.number = phase['number']
         self._protocol = protocol
-        super().__init__()
         self.time_start = phase['time_start']
         self.time_stop = phase['time_stop']
 
@@ -63,7 +65,6 @@ class Session(BaseContainer):
     def __init__(self, path):
         self.path = path
         self._protocol = nr.read_neurone_protocol(self.path)
-        super().__init__()
         self._get_meta()
 
     def _get_meta(self):
