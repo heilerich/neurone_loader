@@ -129,7 +129,8 @@ class MneExportable(abc.ABC):
                                   "substitute_zero_events_with parameter of this method to substitute with an " \
                                   "alternative code"
 
-            while not (stim_channels[channel_index][start:stop + 1] == 0).all():
+            corrected_start = start - 1 if start != 0 else 0  # sample before event start needs to be 0
+            while not (stim_channels[channel_index][corrected_start - 1:stop + 1] == 0).all():
                 channel_index += 1
                 if channel_index >= len(stim_channels):
                     _add_stim_channel()
