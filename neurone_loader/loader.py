@@ -35,7 +35,10 @@ class Phase(BaseContainer):
     def __init__(self, path, phase, protocol=None):
         self.path = path
         self.number = phase['number']
-        self._protocol = protocol
+        if protocol is None:
+            self._protocol = nr.read_neurone_protocol(self.path)
+        else:
+            self._protocol = protocol
         self.time_start = phase['time_start']
         self.time_stop = phase['time_stop']
 
