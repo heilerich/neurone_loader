@@ -34,7 +34,6 @@ class MneExportable(abc.ABC):
         :return: should contain data in (n_samples, n_channels) shape
         :rtype: numpy.ndarray
         """
-        pass
 
     @property
     @abc.abstractmethod
@@ -44,7 +43,6 @@ class MneExportable(abc.ABC):
         and `Code`. Additional fields are ignored.
         :rtype: pandas.DataFrame
         """
-        pass
 
     @property
     @abc.abstractmethod
@@ -53,7 +51,6 @@ class MneExportable(abc.ABC):
         :return: should contain the names of channels, matching the sequence used in the data property
         :rtype: list[str]
         """
-        pass
 
     @property
     @abc.abstractmethod
@@ -62,7 +59,6 @@ class MneExportable(abc.ABC):
         :return: should contain the used sampling rate
         :rtype: int
         """
-        pass
 
     def _import_mne(self):
         try:

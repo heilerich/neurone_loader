@@ -11,13 +11,20 @@
 from unittest import TestCase
 import os
 from functools import reduce
+# noinspection PyPackageRequirements
 import mne
 import numpy as np
+import sys
+
+try:
+    # noinspection PyPackageRequirements
+    import mock
+except ImportError:
+    import unittest.mock as mock
 
 from neurone_loader.loader import Recording, Session, Phase
 
 data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data')
-sessions = ['ses1', 'ses2']
 
 
 class TestAgainstConvertedBBCI(TestCase):
@@ -27,7 +34,6 @@ class TestAgainstConvertedBBCI(TestCase):
 class TestRecording(TestCase):
     @classmethod
     def _get_container(cls):
-        # override self.container, self.time_length according to session/phase/recording
         cls.container = Recording(data_path)
         cls.time_length = reduce(lambda x, y: x + y, [p.time_stop - p.time_start
                                                       for s in cls.container.sessions
@@ -73,4 +79,39 @@ class TestRecording(TestCase):
         with self.assertRaises(AssertionError):
             self.container.to_mne(substitute_zero_events_with='not_int')
 
-# Subclass with phase, session, recording?
+
+class TestSession(TestRecording):
+    @classmethod
+    def _get_container(cls):
+        recording = Recording(data_path)
+        cls.container = Session(recording.sessions[0].path)
+
+        cls.time_length = reduce(lambda x, y: x + y, [p.time_stop - p.time_start
+                                                      for p in cls.container.phases]).total_seconds()
+
+
+class TestPhase(TestRecording):
+    @classmethod
+    def _get_container(cls):
+        recording = Recording(data_path)
+        cls.container = Phase(recording.sessions[0].path, recording.sessions[0]._protocol['phases'][0])
+
+        cls.time_length = (cls.container.time_stop - cls.container.time_start).total_seconds()
+
+
+class TestMNEImport(TestCase):
+    def test_import_failure(self):
+        true_import = __import__
+
+        def _import_mock(name, *args):
+            if name == 'mne':
+                raise ImportError
+            else:
+                return true_import(name, *args)
+
+        builtin_name = 'builtins.__import__' if sys.version_info > (3, 0) else '__builtin__.__import__'
+
+        with mock.patch(builtin_name, side_effect=_import_mock):
+            container = Recording(data_path)
+            result = container.to_mne()
+            self.assertIsNone(result)
