@@ -16,6 +16,8 @@ import mne
 import numpy as np
 import sys
 
+from braindecode.datasets.bbci import BBCIDataset
+
 try:
     # noinspection PyPackageRequirements
     import mock
@@ -25,10 +27,7 @@ except ImportError:
 from neurone_loader.loader import Recording, Session, Phase
 
 data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data')
-
-
-class TestAgainstConvertedBBCI(TestCase):
-    pass
+bbci_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data', 'converted_1-1_250Hz.BBCI.mat')
 
 
 class TestRecording(TestCase):
@@ -115,3 +114,43 @@ class TestMNEImport(TestCase):
             container = Recording(data_path)
             result = container.to_mne()
             self.assertIsNone(result)
+
+
+class TestAgainstBBCI(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.bbci_cnt = BBCIDataset(bbci_path).load()
+        cls.bbci_events = mne.find_events(cls.bbci_cnt)
+
+        raw_rec = Recording(data_path)
+        cls.raw_phase = raw_rec.sessions[0].phases[0]
+        cls.raw_cnt = cls.raw_phase.to_mne(substitute_zero_events_with=256).resample(cls.bbci_cnt.info['sfreq'])
+
+        channel_indices_by_type = mne.io.pick.channel_indices_by_type(cls.raw_cnt.info)
+        stim_channels = np.array(cls.raw_cnt.ch_names)[channel_indices_by_type['stim']].tolist()
+        cls.raw_events = mne.find_events(cls.raw_cnt, stim_channels)
+
+    def test_events(self):
+        raw_events_concat = [self.raw_events[0]]
+        for sample, _, code in self.raw_events[1:]:
+            if -2 <= raw_events_concat[-1][0] - sample <= 2:
+                raw_events_concat[-1][2] += code
+            else:
+                raw_events_concat.append([sample, 0, code])
+        raw_events_concat = np.array(raw_events_concat)
+
+        for ((b_sample, b_bf, b_code), (r_sample, r_bf, r_code)) in zip(raw_events_concat, self.bbci_events):
+            self.assertAlmostEqual(r_sample, b_sample, delta=1)
+            self.assertEqual(b_bf, r_bf)
+            self.assertEqual(b_code, r_code)
+
+    def test_length(self):
+        self.assertEqual(self.bbci_cnt.last_samp, self.raw_cnt.last_samp)
+
+        time_length = (self.raw_phase.time_stop - self.raw_phase.time_start).total_seconds()
+        cnt_length = len(self.raw_cnt) / self.raw_cnt.info['sfreq']
+        bbci_length = len(self.bbci_cnt) / self.bbci_cnt.info['sfreq']
+
+        self.assertAlmostEqual(time_length, cnt_length, places=1)
+        self.assertAlmostEqual(time_length, bbci_length, places=1)
+        self.assertAlmostEqual(cnt_length, bbci_length, places=1)

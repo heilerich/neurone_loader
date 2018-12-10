@@ -126,7 +126,7 @@ class MneExportable(abc.ABC):
                                   "alternative code"
 
             corrected_start = start - 1 if start != 0 else 0  # sample before event start needs to be 0
-            while not (stim_channels[channel_index][corrected_start - 1:stop + 1] == 0).all():
+            while not (stim_channels[channel_index][corrected_start:stop + 1] == 0).all():
                 channel_index += 1
                 if channel_index >= len(stim_channels):
                     _add_stim_channel()
@@ -137,7 +137,7 @@ class MneExportable(abc.ABC):
                                .format(current_code=code, start=start, stop=stop,
                                        channel=stim_channel_names[channel_index]))
 
-            stim_channels[channel_index][start:stop + 1] += code
+            stim_channels[channel_index][start:stop + 1] += code  # event must be at least one sample long
 
         stim_info = mne.create_info(ch_names=stim_channel_names,
                                     sfreq=self.sampling_rate,
