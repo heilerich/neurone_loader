@@ -115,6 +115,17 @@ class TestMNEImport(TestCase):
             result = container.to_mne()
             self.assertIsNone(result)
 
+    @mock.patch('logging.Logger.warning')
+    def test_uncommon_name(self, mocker):
+        uncommon_name = 'UncommonChannel'
+        rec = Recording(data_path)
+        phase = rec.sessions[0].phases[0]
+        phase.channels[0] = uncommon_name
+        cnt = phase.to_mne(substitute_zero_events_with=10)
+        self.assertEqual(cnt.ch_names[0], uncommon_name)
+        self.assertEqual(mne.io.pick.channel_type(cnt.info, 0), 'eeg')
+        self.assertIn(uncommon_name, mocker.call_args_list[0][0][0])  # channel name in warning message
+
 
 class TestAgainstBBCI(TestCase):
     @classmethod
@@ -154,3 +165,16 @@ class TestAgainstBBCI(TestCase):
         self.assertAlmostEqual(time_length, cnt_length, places=1)
         self.assertAlmostEqual(time_length, bbci_length, places=1)
         self.assertAlmostEqual(cnt_length, bbci_length, places=1)
+
+    def test_data(self):
+        raw_data = self.raw_cnt.pick_types(eeg=True).get_data()
+        bbci_data = self.bbci_cnt.drop_channels(['STI 014']).get_data()
+        self.assertEqual(raw_data.shape, bbci_data.shape)
+
+        # bbci_data is in µV
+        # difference per sample relative to average per sample
+        rel_diff = (raw_data * 1e6 - bbci_data) / np.mean(np.stack([raw_data, bbci_data]), axis=0)
+
+        # check that not more than 3% of samples differ more than 1% from average for sample
+        percentage = np.sum(np.abs(rel_diff) > 1) / len(rel_diff.flatten())
+        self.assertLess(percentage, 0.03)
