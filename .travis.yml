@@ -6,9 +6,10 @@ before_install:
   - sudo apt-get install -y git-annex
   - wget https://web.gin.g-node.org/G-Node/gin-cli-releases/raw/master/gin-cli-latest-linux-amd64.tar.gz
   - tar xvzf gin-cli-latest-linux-amd64.tar.gz
-  - /home/travis/gin get heilerich/NeuroneTestdata
+  - sudo mv gin /usr/bin
+  - gin get heilerich/NeuroneTestdata
   - cd NeuroneTestdata
-  - /home/travis/gin get-content .
+  - gin get-content .
   - cd ..
   - mv NeuroneTestdata test/test_data
 
