@@ -1,12 +1,11 @@
+dist: xenial
 language: python
 python:
   - "3.6"
 
 before_install:
-  - sudo apt-get install -y git-annex
-  - wget https://web.gin.g-node.org/G-Node/gin-cli-releases/raw/master/gin-cli-latest-linux-amd64.tar.gz
-  - tar xvzf gin-cli-latest-linux-amd64.tar.gz
-  - sudo mv gin /usr/bin
+  - wget https://web.gin.g-node.org/G-Node/gin-cli-releases/raw/master/gin-cli-latest.deb
+  - sudo dpkg -i gin-cli-latest.deb
   - gin get heilerich/NeuroneTestdata
   - cd NeuroneTestdata
   - gin get-content .
