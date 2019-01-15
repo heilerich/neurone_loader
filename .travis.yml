@@ -3,20 +3,18 @@ language: python
 python:
   - "3.6"
 
-before_install:
-  - wget https://web.gin.g-node.org/G-Node/gin-cli-releases/raw/master/gin-cli-latest.deb
-  - sudo dpkg -i gin-cli-latest.deb
-  - gin get heilerich/NeuroneTestdata
-  - cd NeuroneTestdata
-  - gin get-content .
-  - cd ..
-  - mv NeuroneTestdata test/test_data
-
 install:
   - pip install -r test/test_requirements.txt
   - pip install .
   - pip install python-coveralls
   - pip install coverage
+
+before_script:
+  - git clone https://web.gin.g-node.org/heilerich/NeuroneTestdata
+  - cd NeuroneTestdata
+  - find . -not -path "./.git/*" \( -type f -o -type l \) -exec rm {} \; -exec wget -q --show-progress https://web.gin.g-node.org/heilerich/NeuroneTestdata/raw/master/{} -O {} \;
+  - cd ..
+  - mv NeuroneTestdata test/test_data
 
 script:
   - coverage run -m unittest discover -s test -t .
