@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 #  This file (test_mne_export.py) is part of neurone_loader                    -
 #  (https://www.github.com/heilerich/neurone_loader)                           -
-#  Copyright © 2018 Felix Heilmeyer.                                           -
+#  Copyright © 2019 Felix Heilmeyer.                                           -
 #                                                                              -
 #  This code is released under the MIT License                                 -
 #  https://opensource.org/licenses/mit-license.php                             -
@@ -16,6 +16,7 @@ import mne
 import numpy as np
 import sys
 
+# noinspection PyPackageRequirements
 from braindecode.datasets.bbci import BBCIDataset
 
 try:
@@ -48,6 +49,12 @@ class TestRecording(TestCase):
         channel_indices_by_type = mne.io.pick.channel_indices_by_type(cls.cnt.info)
         stim_channels = np.array(cls.cnt.ch_names)[channel_indices_by_type['stim']].tolist()
         cls.cnt_events = mne.find_events(cls.cnt, stim_channels)
+
+    @classmethod
+    def tearDownClass(cls):
+        del cls.container
+        # noinspection PyUnresolvedReferences
+        del cls.cnt
 
     def test_time_length(self):
         cnt_time_length = self.cnt.last_samp / self.cnt.info['sfreq']
@@ -115,6 +122,8 @@ class TestMNEImport(TestCase):
             result = container.to_mne()
             self.assertIsNone(result)
 
+
+class TestChannelWarning(TestCase):
     @mock.patch('logging.Logger.warning')
     def test_uncommon_name(self, mocker):
         uncommon_name = 'UncommonChannel'
@@ -178,3 +187,10 @@ class TestAgainstBBCI(TestCase):
         # check that not more than 3% of samples differ more than 1% from average for sample
         percentage = np.sum(np.abs(rel_diff) > 1) / len(rel_diff.flatten())
         self.assertLess(percentage, 0.03)
+
+    # noinspection PyUnresolvedReferences
+    @classmethod
+    def tearDownClass(cls):
+        del cls.bbci_cnt
+        del cls.raw_phase
+        del cls.raw_cnt

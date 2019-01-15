@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 #  This file (loader.py) is part of neurone_loader                             -
 #  (https://www.github.com/heilerich/neurone_loader)                           -
-#  Copyright © 2018 Felix Heilmeyer.                                           -
+#  Copyright © 2019 Felix Heilmeyer.                                           -
 #                                                                              -
 #  This code is released under the MIT License                                 -
 #  https://opensource.org/licenses/mit-license.php                             -
@@ -62,6 +62,9 @@ class Phase(BaseContainer):
     def n_channels(self):
         return nr.read_neurone_data_info(self.path, self.number, self._protocol).n_channels
 
+    def clear_data(self):
+        del self.data
+
 
 @preloadable
 class Session(BaseContainer):
@@ -81,10 +84,34 @@ class Session(BaseContainer):
     def event_codes(self):
         return np.unique(np.concatenate([phase.event_codes for phase in self.phases]))
 
-    @property
+    @Lazy
     def data(self):
         phases = sorted(self.phases, key=lambda p: p.number)
-        return np.concatenate([p.data for p in phases])
+        new_array = None
+        slices = []
+        for p in phases:
+            if new_array is None:
+                new_array = p.data
+                slices.append((0, len(p.data)))
+            else:
+                old_length = len(new_array)
+                shape = list(new_array.shape)
+                shape[0] += len(p.data)
+                new_array.resize(shape)
+                new_array[-len(p.data):] = p.data
+                slices.append((old_length, old_length + len(p.data)))
+            del p.data
+
+        for index, p in enumerate(phases):
+            start, stop = slices[index]
+            p.data = new_array[start:stop]
+
+        return new_array
+
+    def clear_data(self):
+        for p in self.phases:
+            p.clear_data()
+        del self.data
 
     @property
     def events(self):
@@ -135,10 +162,47 @@ class Recording(BaseContainer):
     def event_codes(self):
         return np.unique(np.concatenate([session.event_codes for session in self.sessions]))
 
-    @property
+    @Lazy
     def data(self):
         sessions = sorted(self.sessions, key=lambda x: x.time_start)
-        return np.concatenate([s.data for s in sessions])
+        new_array = None
+        slices = []
+        all_phase_slices = []
+        for s in sessions:
+            old_length = len(new_array) if new_array is not None else 0
+            new_length = old_length + len(s.data)
+            del s.data
+
+            phases = sorted(s.phases, key=lambda p: p.number)
+            phase_slices = []
+            for p in phases:
+                if new_array is None:
+                    new_array = np.copy(p.data)
+                    phase_slices.append((0, len(p.data)))
+                else:
+                    old_length = len(new_array)
+                    shape = list(new_array.shape)
+                    shape[0] += len(p.data)
+                    new_array.resize(shape)
+                    new_array[-len(p.data):] = p.data
+                    phase_slices.append((old_length, old_length + len(p.data)))
+                del p.data
+            all_phase_slices.append(phase_slices)
+            slices.append((old_length, new_length))
+
+        for s_index, s in enumerate(sessions):
+            for p_index, p in enumerate(s.phases):
+                start, stop = all_phase_slices[s_index][p_index]
+                p.data = new_array[start:stop]
+            start, stop = slices[s_index]
+            s.data = new_array[start:stop]
+
+        return new_array
+
+    def clear_data(self):
+        for s in self.sessions:
+            s.clear_data()
+        del self.data
 
     @property
     def events(self):

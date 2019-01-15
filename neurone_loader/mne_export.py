@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 #  This file (mne_export.py) is part of neurone_loader                         -
 #  (https://www.github.com/heilerich/neurone_loader)                           -
-#  Copyright © 2018 Felix Heilmeyer.                                           -
+#  Copyright © 2019 Felix Heilmeyer.                                           -
 #                                                                              -
 #  This code is released under the MIT License                                 -
 #  https://opensource.org/licenses/mit-license.php                             -
@@ -15,6 +15,7 @@ to be converted to a mne.io.RawArray.
 import logging
 import numpy as np
 import abc
+from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,12 @@ class MneExportable(abc.ABC):
         """
         :return: should contain data in (n_samples, n_channels) shape
         :rtype: numpy.ndarray
+        """
+
+    @abc.abstractmethod
+    def clear_data(self):
+        """
+        Delete loaded data from memory
         """
 
     @property
@@ -71,11 +78,13 @@ class MneExportable(abc.ABC):
                          "and all its dependencies.")
             return False
 
-    def to_mne(self, substitute_zero_events_with=None):
+    def to_mne(self, substitute_zero_events_with=None, copy=False):
         """
         Convert loaded data to a mne.io.RawArray
         :param substitute_zero_events_with: events with code = 0 are not supported by MNE, if this parameter is set, the
         event code 0 will be substituted with this parameter
+        :param copy: if False (default) original data will be removed from memory to save space while creating the
+        mne.io.RawArray. If the data is needed again it must be reloaded from disk
         :type substitute_zero_events_with: None (default) or int
         :return: the converted data
         :rtype: mne.io.RawArray
@@ -87,8 +96,6 @@ class MneExportable(abc.ABC):
                 return
         mne = self._mne
 
-        # data is µV samples x channels, mne needs V channels x samples
-        data = (self.data / (1000 * 1000)).T
         events = self.events
 
         def _channel_type(name):
@@ -111,11 +118,8 @@ class MneExportable(abc.ABC):
         channel_types = list(map(_channel_type, self.channels))
         assert len(channel_types) == len(self.channels)
 
-        info = mne.create_info(ch_names=self.channels,
-                               sfreq=self.sampling_rate,
-                               ch_types=channel_types)
-
-        cnt = mne.io.RawArray(data, info)
+        data_length = self.data.T.shape[1]
+        data_dtype = self.data.dtype
 
         ssc = [(start, stop, code) for (start, stop, code)
                in events[['StartSampleIndex', 'StopSampleIndex', 'Code']].values]
@@ -128,12 +132,12 @@ class MneExportable(abc.ABC):
                     .format(substitute_zero_events_with)
 
         stim_channel_names = ['STI 014']
-        stim_channels = [np.zeros_like(cnt.get_data()[0])]
+        stim_channels = [np.zeros(data_length, dtype=data_dtype)]
 
         def _add_stim_channel():
             index = len(stim_channel_names)
             stim_channel_names.append('STI {:03g}'.format(index + 14))
-            stim_channels.append(np.zeros_like(cnt.get_data()[0]))
+            stim_channels.append(np.zeros(data_length, dtype=data_dtype))
 
         for start, stop, code in ssc:
             channel_index = 0
@@ -164,6 +168,21 @@ class MneExportable(abc.ABC):
                                     ch_types='stim')
 
         stim_cnt = mne.io.RawArray(stim_channels, stim_info, verbose='WARNING')
+
+        channel_names = deepcopy(self.channels)
+        channel_names.extend(stim_channel_names)
+        all_channel_types = deepcopy(channel_types)
+        all_channel_types.extend(['stim' for _ in stim_channel_names])
+
+        info = mne.create_info(ch_names=self.channels,
+                               sfreq=self.sampling_rate,
+                               ch_types=channel_types)
+
+        # data is µV samples x channels, mne needs V channels x samples
+        data = self.data.T / (1000 * 1000)
+        cnt = mne.io.RawArray(data, info)
+        if not copy:
+            self.clear_data()
 
         cnt = cnt.add_channels([stim_cnt])
 
