@@ -28,45 +28,6 @@ class MneExportable(abc.ABC):
 
     """
 
-    @property
-    @abc.abstractmethod
-    def data(self):
-        """
-        :return: should contain data in (n_samples, n_channels) shape
-        :rtype: numpy.ndarray
-        """
-
-    @abc.abstractmethod
-    def clear_data(self):
-        """
-        Delete loaded data from memory
-        """
-
-    @property
-    @abc.abstractmethod
-    def events(self):
-        """
-        :return: should contain the events as a DataFrame, required fields are `StartSampleIndex`, `StopSampleIndex`
-        and `Code`. Additional fields are ignored.
-        :rtype: pandas.DataFrame
-        """
-
-    @property
-    @abc.abstractmethod
-    def channels(self):
-        """
-        :return: should contain the names of channels, matching the sequence used in the data property
-        :rtype: list[str]
-        """
-
-    @property
-    @abc.abstractmethod
-    def sampling_rate(self):
-        """
-        :return: should contain the used sampling rate
-        :rtype: int
-        """
-
     def _import_mne(self):
         try:
             # noinspection PyPackageRequirements
@@ -81,11 +42,13 @@ class MneExportable(abc.ABC):
     def to_mne(self, substitute_zero_events_with=None, copy=False):
         """
         Convert loaded data to a mne.io.RawArray
-        :param substitute_zero_events_with: events with code = 0 are not supported by MNE, if this parameter is set, the
-        event code 0 will be substituted with this parameter
-        :param copy: if False (default) original data will be removed from memory to save space while creating the
-        mne.io.RawArray. If the data is needed again it must be reloaded from disk
-        :type substitute_zero_events_with: None (default) or int
+
+        :param substitute_zero_events_with: None. events with code = 0 are not supported by MNE, if this parameter is
+                                            set, the event code 0 will be substituted with this parameter
+        :param copy: False. If False, the original data will be removed from memory to save space while creating the
+                     mne.io.RawArray. If the data is needed again it must be reloaded from disk
+        :type substitute_zero_events_with: None or int
+        :type copy: bool
         :return: the converted data
         :rtype: mne.io.RawArray
         :raises ImportError: if the mne package is not installed
@@ -93,7 +56,7 @@ class MneExportable(abc.ABC):
 
         if not hasattr(self, '_mne'):
             if not self._import_mne():
-                return
+                raise ImportError
         mne = self._mne
 
         events = self.events
@@ -187,6 +150,55 @@ class MneExportable(abc.ABC):
         cnt = cnt.add_channels([stim_cnt])
 
         return cnt
+
+    @property
+    @abc.abstractmethod
+    def data(self):
+        """
+        Abstract Property
+
+        :return: should contain data in (n_samples, n_channels) shape
+        :rtype: numpy.ndarray
+        """
+
+    @abc.abstractmethod
+    def clear_data(self):
+        """
+        Abstract Method
+
+        Should delete loaded data from memory
+        """
+
+    @property
+    @abc.abstractmethod
+    def events(self):
+        """
+        Abstract Property
+
+        :return: should contain the events as a DataFrame, required fields are `StartSampleIndex`, `StopSampleIndex`
+                 and `Code`. Additional fields are ignored.
+        :rtype: pandas.DataFrame
+        """
+
+    @property
+    @abc.abstractmethod
+    def channels(self):
+        """
+        Abstract Property
+
+        :return: should contain the names of channels, matching the sequence used in the data property
+        :rtype: list[str]
+        """
+
+    @property
+    @abc.abstractmethod
+    def sampling_rate(self):
+        """
+        Abstract Property
+
+        :return: should contain the used sampling rate
+        :rtype: int
+        """
 
 
 _default_eeg_channel_names = ['Fp1', 'Fpz', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8', 'FC5', 'FC1', 'FC2', 'FC6', 'M1', 'T7',

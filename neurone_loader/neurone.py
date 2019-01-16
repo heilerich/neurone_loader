@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 #  This file (neurone.py) is part of neurone_loader                            -
 #  (https://www.github.com/heilerich/neurone_loader)                           -
-#  Copyright © 2018 Felix Heilmeyer.                                           -
+#  Copyright © 2019 Felix Heilmeyer.                                           -
 #                                                                              -
 #  This code is released under the MIT License                                 -
 #  https://opensource.org/licenses/mit-license.php                             -
@@ -10,7 +10,7 @@
 
 
 """
-This module contains functions for reading data from a
+This module contains functions for reading data recorded with a
 Bittium NeurOne device. This module currently supports
 reading of data and events.
 """
