@@ -1,9 +1,8 @@
-Welcome to NeuroneLoader's documentation!
-=========================================
+.. include:: ../README.rst
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents
+   :caption: Tutorials
 
 API
 ===
