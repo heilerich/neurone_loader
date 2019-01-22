@@ -1,6 +1,4 @@
-{{ fullname }}
-{{ underline }}
-
+{{ fullname | escape | underline }}
 
 {% if classes %}
 Classes

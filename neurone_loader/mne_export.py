@@ -35,7 +35,7 @@ class MneExportable(abc.ABC):
             self._mne = mne
             return True
         except ImportError:
-            logger.error("To convert data to an MNE object you must install MNE"
+            logger.error("To convert data to an MNE object you must install MNE "
                          "and all its dependencies.")
             return False
 
@@ -91,8 +91,8 @@ class MneExportable(abc.ABC):
             event_codes = np.unique(events['Code'].values)
             assert type(substitute_zero_events_with) is int, 'substitute_zero_events_with must be int or None'
             assert substitute_zero_events_with not in event_codes, \
-                "the original data can't contain event with code substitute_zero_events_with ({})" \
-                    .format(substitute_zero_events_with)
+                """the original data can't contain event with code
+                substitute_zero_events_with ({})""".format(substitute_zero_events_with)
 
         stim_channel_names = ['STI 014']
         stim_channels = [np.zeros(data_length, dtype=data_dtype)]

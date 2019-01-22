@@ -5,18 +5,21 @@ Welcome to NeuroneLoader's documentation!
    :maxdepth: 2
    :caption: Contents
 
-
 API
 ===
 
-.. autosummary::
-   :toctree: _autosummary
+.. toctree::
+   :caption: API
+   :maxdepth: 1
+   :hidden:
 
+   API
+
+.. autosummary::
    neurone_loader.loader
    neurone_loader.mne_export
    neurone_loader.neurone
    neurone_loader.lazy
-
 
 Indices and tables
 ==================

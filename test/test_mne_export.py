@@ -7,7 +7,6 @@
 #  https://opensource.org/licenses/mit-license.php                             -
 #  Please see the file LICENSE for details.                                    -
 # ------------------------------------------------------------------------------
-
 from unittest import TestCase
 import os
 from functools import reduce
@@ -75,7 +74,7 @@ class TestRecording(TestCase):
             self.container.to_mne()
 
     def test_invalid_substitution(self):
-        event_codes = self.container.event_codes.tolist()
+        event_codes = self.container.event_codes.tolist()  # type: list
         event_codes.remove(0)
         invalid_code = event_codes[0]
 
@@ -83,6 +82,7 @@ class TestRecording(TestCase):
             self.container.to_mne(substitute_zero_events_with=invalid_code)
 
         with self.assertRaises(AssertionError):
+            # noinspection PyTypeChecker
             self.container.to_mne(substitute_zero_events_with='not_int')
 
 
@@ -119,8 +119,8 @@ class TestMNEImport(TestCase):
 
         with mock.patch(builtin_name, side_effect=_import_mock):
             container = Recording(data_path)
-            result = container.to_mne()
-            self.assertIsNone(result)
+            with self.assertRaises(ImportError):
+                container.to_mne()
 
 
 class TestChannelWarning(TestCase):

@@ -27,7 +27,7 @@ class Lazy(property):
     difference being the following: A function decorated with :py:class:`property` is evaluated every time the attribute
     is accessed. A function decorated with :py:class:`.lazy.Lazy` is only evaluated once and the result is stored as a
     private attribute. Subsequently the private attribute is returned when the property constructed with
-    :py:class:`.lazy.Lazy` is accessed. The lazy property can also be manually set or deleted, just like every other
+    :py:class:`.lazy.Lazy` is accessed. The lazy property can also be set manually or deleted, just like every other
     attribute. When the lazy attribute is deleted and then accessed again, the property function is called again and
     the result stored as a private attribute.
 
@@ -68,8 +68,13 @@ class Lazy(property):
         self.private_name = "_{}".format(fget.__name__)
         doc = doc or fget.__doc__
         property.__init__(self, fget=fget, fset=fset, fdel=fdel, doc=doc)
+
         # noinspection PyTypeChecker
         update_wrapper(self, fget)
+
+        self.__doc__ += """
+        .. note:: This property is a lazy property. For details see :py:class:`.lazy.Lazy`.
+        """
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -127,7 +132,7 @@ def preloadable(cls):
     lazy function called
     """
 
-    def preload(self):
+    def _preload(self):
         """
         Use this function to call all properties constructed with :py:class:`.lazy.Lazy`. It can also be used to
         reload all lazy properties without deleting them first.
@@ -156,14 +161,14 @@ def preloadable(cls):
                 preload_function = getattr(obj, 'preload')
                 if callable(preload_function):
                     obj.preload()
-                    
+
         for attr in [attr for attr in dir(self) if not attr.startswith('__')]:
             possible_prop = getattr(obj_type, attr, None)
             if isinstance(possible_prop, Lazy):
                 if not hasattr(self, possible_prop.private_name):
                     logger.debug('Preloading property {} of {}'.format(attr, self))
                     getattr(self, attr)
-            
+
             attr_obj = getattr(self, attr)
             try:
                 _ = (e for e in attr_obj)  # Iterable
@@ -173,19 +178,21 @@ def preloadable(cls):
                 # not iterable
                 _try_preload_child(attr_obj)
 
-    cls.preload = preload
-    
-    def wrapper(*args, **kwargs):
-        """
-        Wraps the init function to catch the reload argument.
-        """
+    original_init = cls.__init__
+    cls.preload = _preload
+
+    def _new_init(self, *args, **kwargs):
         if 'preload' in kwargs:
             preload_enabled = kwargs['preload']
             del kwargs['preload']
         else:
             preload_enabled = False
-        obj = cls(*args, **kwargs)
+
+        original_init(self, *args, **kwargs)
+
         if preload_enabled:
-            obj.preload()
-        return obj
-    return wrapper
+            self.preload()
+
+    cls.__init__ = _new_init
+
+    return cls
