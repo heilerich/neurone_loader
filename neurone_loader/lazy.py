@@ -72,9 +72,10 @@ class Lazy(property):
         # noinspection PyTypeChecker
         update_wrapper(self, fget)
 
-        self.__doc__ += """
-        .. note:: This property is a lazy property. For details see :py:class:`.lazy.Lazy`.
-        """
+        if type(self.__doc__) is str:
+            self.__doc__ += """
+            .. note:: This property is a lazy property. For details see :py:class:`.lazy.Lazy`.
+            """
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -97,7 +98,8 @@ class Lazy(property):
 
     def __delete__(self, instance):
         if self.fdel is None:
-            delattr(instance, self.private_name)
+            if hasattr(instance, self.private_name):
+                delattr(instance, self.private_name)
         else:
             # noinspection PyArgumentList
             self.fdel(instance)
