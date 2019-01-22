@@ -10,7 +10,7 @@
 
 
 """
-This module contains functions for reading data recorded with a
+Contains functions for reading data recorded with a
 Bittium NeurOne device. This module currently supports
 reading of data and events.
 """

@@ -8,8 +8,8 @@
 #  Please see the file LICENSE for details.                                    -
 # ------------------------------------------------------------------------------
 """
-This module provides the metaclass `MneExportable` that allows subclasses implementing all the metaclass's properties
-to be converted to a mne.io.RawArray.
+Provides the metaclass `MneExportable` that allows subclasses implementing all the metaclass's properties
+to be converted to a `mne.io.RawArray`.
 """
 
 import logging

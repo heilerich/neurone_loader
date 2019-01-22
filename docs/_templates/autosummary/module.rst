@@ -28,8 +28,6 @@ Exceptions
 	{{ fullname }}.{{ exception }}
    {% endfor %}
 {% endif %}
-.. autosummary::
-
 
 .. automodule:: {{ fullname }}
    :members:
