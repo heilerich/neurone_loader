@@ -18,4 +18,10 @@ TODO: package on pypi
 TODO: short intro, also in docs, binder?
 
 ## Documentation
-The [documentation](https://neurone-loader.readthedocs.io/en/latest/) for the latest release is hosted on ReadTheDocs.
+The [documentation](https://neurone-loader.readthedocs.io/en/latest/)
+for the latest release is hosted on ReadTheDocs.
+
+---
+Props to Andreas Henelius at Finnish Institute of Occupational Health for figuring out how
+to read the NeurOne binary format in pure python as part of his
+[export2hdf](https://github.com/bwrc/export2hdf5) project.
