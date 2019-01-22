@@ -1,8 +1,11 @@
 .. include:: ../README.rst
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Tutorials
+   :maxdepth: 1
+   :caption: Concepts
+   :glob:
+
+   concepts/*
 
 API
 ===
