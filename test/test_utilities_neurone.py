@@ -10,10 +10,11 @@
 # ------------------------------------------------------------------------------
 
 from unittest import TestCase
-import pickle
+from zodbpickle import pickle
 import os
 from hashlib import sha256
 from multiprocessing import Pool
+import sys
 
 from neurone_loader.neurone import *
 
@@ -49,7 +50,10 @@ class TestDataReading(TestCase):
 class TestStability(TestCase):
     def test_event_stability(self):
         with open(os.path.join(data_path, 'ses1_1_events.pkl'), 'rb') as f:
-            true_events = pickle.load(f)
+            if sys.version_info >= (3, 0):
+                true_events = pickle.load(f, errors='bytes')
+            else:
+                true_events = pickle.load(f)
         read_events = read_neurone_events(os.path.join(data_path, sessions[0]))
         # noinspection PyUnresolvedReferences
         self.assertTrue((true_events['events'] == read_events['events']).all())
@@ -58,8 +62,7 @@ class TestStability(TestCase):
 
     def test_protocol_stability(self):
         for session in sessions:
-            with open(os.path.join(data_path, '{}_meta.pkl'.format(session)),
-                      'rb') as f:
+            with open(os.path.join(data_path, '{}_meta.pkl'.format(session)), 'rb') as f:
                 true_session_meta = pickle.load(f)
 
             session_meta = read_neurone_protocol(os.path.join(data_path, session))
@@ -100,4 +103,4 @@ class TestStability(TestCase):
 def _hash_data(session, session_path, number):
     key = ':'.join([session, number])
     session_data = read_neurone_data(session_path, number)
-    return key, sha256(session_data.data.tobytes()).hexdigest()
+    return key, sha256(session_data.tobytes()).hexdigest()

@@ -18,6 +18,13 @@ from neurone_loader.loader import Recording, Session
 
 data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data')
 
+try:
+    FileNotFoundError
+except NameError:
+    # there is not FileNotFoundError in Python 2.7
+    # noinspection PyShadowingBuiltins,PyPep8Naming
+    FileNotFoundError = IOError
+
 
 class TestDataParsing(TestCase):
     def setUp(self):
@@ -41,7 +48,7 @@ class TestDataParsing(TestCase):
     def test_sampling_rate(self):
         samples = self.rec.n_samples
         sampling_rate = self.rec.sampling_rate
-        expected_length = samples / sampling_rate
+        expected_length = float(samples) / float(sampling_rate)
         self.assertAlmostEqual(self.time_length, expected_length, places=0)
 
     def test_data_abs(self):

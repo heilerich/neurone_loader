@@ -20,8 +20,11 @@ from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
+# compatible with Python 2 *and* 3:
+ABC = abc.ABCMeta('ABC', (object,), {'__slots__': ()})
 
-class MneExportable(abc.ABC):
+
+class MneExportable(ABC):
     """
 
     A metaclass that provides a function allowing objects that expose data, events, channels and sampling_rate

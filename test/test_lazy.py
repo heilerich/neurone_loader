@@ -16,7 +16,7 @@ from neurone_loader.lazy import Lazy, preloadable
 _test_data = 'toast'
 
 
-class TestClass:
+class TestClass(object):
     @Lazy
     def lazy_property(self):
         return _test_data
@@ -69,7 +69,7 @@ class TestExplicitLazy(TestLazy):
         TestLazy.setUp(self)
         test_data = self.test_data
 
-        class ExplicitTestClass:
+        class ExplicitTestClass(object):
             @Lazy
             def lazy_property(self):
                 return test_data

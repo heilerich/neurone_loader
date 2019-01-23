@@ -1,2 +1,4 @@
 mne
 braindecode
+mock
+zodbpickle
