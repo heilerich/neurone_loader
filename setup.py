@@ -17,9 +17,6 @@ import re
 
 this_directory = os.path.abspath(os.path.dirname(__file__))
 
-with open(os.path.join(this_directory, 'README.rst'), encoding='utf-8') as f:
-    long_description = f.read()
-
 
 def read(*parts):
     # noinspection PyArgumentEqualDefault
@@ -42,6 +39,7 @@ def find_requirements(*file_paths):
     return requirements if requirements is not None else []
 
 
+long_description = read('README.rst')
 version_number = find_version('neurone_loader', '__init__.py')
 
 setup(name='neurone_loader',
