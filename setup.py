@@ -41,6 +41,7 @@ def find_requirements(*file_paths):
 
 long_description = read('README.rst')
 version_number = find_version('neurone_loader', '__init__.py')
+requirements = find_requirements('requirements.txt')
 
 setup(name='neurone_loader',
       version=version_number,
@@ -55,9 +56,12 @@ setup(name='neurone_loader',
       keywords=['EEG', 'science', 'neuroscience', 'neurone', 'bittium', 'megaemg', 'MNE'],
       download_url='https://github.com/heilerich/neurone_loader/archive/v{}.tar.gz'.format(version_number),
       zip_safe=False,
-      install_requires=[
-          'numpy',
-          'pandas',
-          'construct'
+      install_requires=requirements,
+      classifiers=[
+          'License :: OSI Approved :: MIT License',
+          'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
+          'Topic :: Scientific/Engineering'
       ]
       )
