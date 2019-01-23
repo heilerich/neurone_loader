@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------------
 #  This file (neurone.py) is part of neurone_loader                            -
 #  (https://www.github.com/heilerich/neurone_loader)                           -

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------------
 #  This file (test_mne_export.py) is part of neurone_loader                    -
 #  (https://www.github.com/heilerich/neurone_loader)                           -

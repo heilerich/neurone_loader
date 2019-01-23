@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------------
 #  This file (test_utilities_neurone.py) is part of neurone_loader             -
 #  (https://www.github.com/heilerich/neurone_loader)                           -
-#  Copyright © 2018 Felix Heilmeyer.                                           -
+#  Copyright © 2019 Felix Heilmeyer.                                           -
 #                                                                              -
 #  This code is released under the MIT License                                 -
 #  https://opensource.org/licenses/mit-license.php                             -
