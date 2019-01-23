@@ -5,3 +5,4 @@ nbsphinx
 numpy
 pandas
 construct
+ipython # else no syntax highlighting for nbsphinx on rtd
