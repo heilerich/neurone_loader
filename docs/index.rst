@@ -5,7 +5,9 @@
    :caption: Concepts
    :glob:
 
-   concepts/*
+   concepts/containers.ipynb
+   concepts/lazy_loading.ipynb
+   concepts/exporting.ipynb
 
 API
 ===

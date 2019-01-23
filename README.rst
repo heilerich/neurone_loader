@@ -28,6 +28,7 @@ export2hdf_ project.
 * Documentation_
 
 .. _Documentation: https://neurone-loader.readthedocs.io/en/latest/
+.. _export2hdf: https://github.com/bwrc/export2hdf5
 
 Installation
 ------------
@@ -56,4 +57,12 @@ as it has been copied - unless you specify otherwise.
 I recommend looking at the docstrings before executing anything and
 maybe having a look at Concepts section in the Documentation_ before you start working with this package.
 
-.. _export2hdf: https://github.com/bwrc/export2hdf5
+Contributing
+------------
+
+If you encounter any problem feel free to open a issue_ on GitHub. If you found a bug and want to
+supply a fix or if you want to contribute a new feature open a `pull request`_. Just make sure that
+your code is not breaking any tests and you also supply tests for your code.
+
+.. _issue: https://github.com/heilerich/neurone_loader/issues
+.. _pull request: https://github.com/heilerich/neurone_loader/pulls
