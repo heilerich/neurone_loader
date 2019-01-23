@@ -16,7 +16,6 @@ install:
   - pip install coverage
 
 before_script:
-  - git rev-parse --short head
   - git clone https://web.gin.g-node.org/heilerich/NeuroneTestdata
   - cd NeuroneTestdata
   - find . -not -path "./.git/*" \( -type f -o -type l \) -exec rm {} \; -exec wget
