@@ -36,6 +36,12 @@ def find_version(*file_paths):
     raise RuntimeError('Unable to find version string.')
 
 
+def find_requirements(*file_paths):
+    requirements_file = read(*file_paths)
+    requirements = re.findall(r"^(.+)$", requirements_file, re.M)
+    return requirements if requirements is not None else []
+
+
 version_number = find_version('neurone_loader', '__init__.py')
 
 setup(name='neurone_loader',
