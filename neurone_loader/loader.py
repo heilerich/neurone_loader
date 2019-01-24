@@ -153,7 +153,8 @@ class Session(BaseContainer):
         slices = []
         for p in phases:
             if new_array is None:
-                new_array = p.data
+                new_array = np.copy(p.data)
+                del p.data
                 slices.append((0, len(p.data)))
             else:
                 old_length = len(new_array)
