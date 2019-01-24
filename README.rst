@@ -67,11 +67,13 @@ your code is not breaking any tests and you also supply tests for your code. To 
 must first get the test data:
 
 .. code:: bash
+
    bash test/get_test_data.sh
 
 Then you can run the tests with:
 
 .. code:: bash
+
    python -m unittest discover -s test -t .
 
 
