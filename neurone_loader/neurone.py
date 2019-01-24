@@ -9,6 +9,12 @@
 #  Please see the file LICENSE for details.                                    -
 # ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+# This file contains code originally from export2hdf5                          -
+# (https://github.com/bwrc/export2hdf5)                                        -
+# Created by Andreas Henelius <andreas.henelius@ttl.fi>,                       -
+# Finnish Institute of Occupational Health                                     -
+# ------------------------------------------------------------------------------
 
 """
 Contains functions for reading data recorded with a
