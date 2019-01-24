@@ -16,7 +16,7 @@ NeuroneLoader
    :target: https://github.com/heilerich/neurone_loader/blob/master/LICENSE
    :alt: License
 
-NeuroneLoader is a python module for loading data recorded with
+NeuroneLoader is a python module for loading neurophysiological data recorded with
 Bittium NeurOne (formerly MegaEMG).
 
 Props to Andreas Henelius at Finnish Institute of Occupational Health for figuring out how
