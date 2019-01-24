@@ -42,6 +42,10 @@ class BaseContainer(MneExportable):
         """
         return self._protocol['channels'] if hasattr(self, '_protocol') else None
 
+    def _has_data(self):
+        private_attribute_name = getattr(type(self), 'data').private_name
+        return hasattr(self, private_attribute_name)
+
 
 @preloadable
 class Phase(BaseContainer):
@@ -267,7 +271,10 @@ class Recording(BaseContainer):
         all_phase_slices = []
         for s in sessions:
             old_length = len(new_array) if new_array is not None else 0
-            new_length = old_length + len(s.data)
+            if s._has_data():
+                new_length = old_length + len(s.data)
+            else:
+                new_length = old_length + s.n_samples
             del s.data
 
             phases = sorted(s.phases, key=lambda phase: phase.number)
