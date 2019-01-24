@@ -164,8 +164,8 @@ class Session(BaseContainer):
                 old_length = len(new_array)
                 shape = list(new_array.shape)
                 shape[0] += len(p.data)
-                new_array.resize(shape)
-                new_array[-len(p.data):] = p.data
+                new_array.resize(shape, refcheck=False)  # data is explicitly copied above and following slices are
+                new_array[-len(p.data):] = p.data  # appended hence also copied, this should be fine
                 slices.append((old_length, old_length + len(p.data)))
             del p.data
 
@@ -284,13 +284,14 @@ class Recording(BaseContainer):
                     new_array = np.copy(p.data)
                     phase_slices.append((0, len(p.data)))
                 else:
-                    old_length = len(new_array)
+                    old_phase_length = len(new_array)
                     shape = list(new_array.shape)
                     shape[0] += len(p.data)
-                    new_array.resize(shape)
-                    new_array[-len(p.data):] = p.data
-                    phase_slices.append((old_length, old_length + len(p.data)))
+                    new_array.resize(shape, refcheck=False)  # data is explicitly copied above and following slices are
+                    new_array[-len(p.data):] = p.data  # appended hence also copied, this should be fine
+                    phase_slices.append((old_phase_length, old_phase_length + len(p.data)))
                 del p.data
+
             all_phase_slices.append(phase_slices)
             slices.append((old_length, new_length))
 
