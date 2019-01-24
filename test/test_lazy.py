@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------------
 #  This file (test_lazy.py) is part of neurone_loader                          -
 #  (https://www.github.com/heilerich/neurone_loader)                           -
-#  Copyright © 2018 Felix Heilmeyer.                                           -
+#  Copyright © 2019 Felix Heilmeyer.                                           -
 #                                                                              -
 #  This code is released under the MIT License                                 -
 #  https://opensource.org/licenses/mit-license.php                             -
@@ -15,7 +16,7 @@ from neurone_loader.lazy import Lazy, preloadable
 _test_data = 'toast'
 
 
-class TestClass:
+class TestClass(object):
     @Lazy
     def lazy_property(self):
         return _test_data
@@ -55,6 +56,9 @@ class TestLazy(TestCase):
         del self.test_object.lazy_property
         self.assertFalse(self.test_object.has_private_attribute)
 
+        # test deletion of not yet loaded data
+        del self.test_object.lazy_property
+
         data = self.test_object.lazy_property
         self.assertEqual(data, self.test_data)
         self.assertTrue(self.test_object.has_private_attribute)
@@ -65,7 +69,7 @@ class TestExplicitLazy(TestLazy):
         TestLazy.setUp(self)
         test_data = self.test_data
 
-        class ExplicitTestClass:
+        class ExplicitTestClass(object):
             @Lazy
             def lazy_property(self):
                 return test_data
@@ -78,7 +82,8 @@ class TestExplicitLazy(TestLazy):
             @lazy_property.deleter
             def lazy_property(self):
                 private_name = getattr(type(self).__dict__['lazy_property'], 'private_name')
-                delattr(self, private_name)
+                if hasattr(self, private_name):
+                    delattr(self, private_name)
 
             @property
             def has_private_attribute(self):

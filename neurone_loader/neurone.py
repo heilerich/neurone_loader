@@ -1,16 +1,23 @@
+# -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------------
 #  This file (neurone.py) is part of neurone_loader                            -
 #  (https://www.github.com/heilerich/neurone_loader)                           -
-#  Copyright © 2018 Felix Heilmeyer.                                           -
+#  Copyright © 2019 Felix Heilmeyer.                                           -
 #                                                                              -
 #  This code is released under the MIT License                                 -
 #  https://opensource.org/licenses/mit-license.php                             -
 #  Please see the file LICENSE for details.                                    -
 # ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+# This file contains code originally from export2hdf5                          -
+# (https://github.com/bwrc/export2hdf5)                                        -
+# Created by Andreas Henelius <andreas.henelius@ttl.fi>,                       -
+# Finnish Institute of Occupational Health                                     -
+# ------------------------------------------------------------------------------
 
 """
-This module contains functions for reading data from a
+Contains functions for reading data recorded with a
 Bittium NeurOne device. This module currently supports
 reading of data and events.
 """
@@ -31,7 +38,7 @@ def read_neurone_protocol(fpath):
     Read the measurement protocol from an XML file.
 
     Arguments:
-       - fpath : the path to the directory holding the
+       - fpath: the path to the directory holding the
                  NeurOne measurement (i.e., the
                  directory Protocol.xml and Session.xml
                  files.
@@ -116,17 +123,17 @@ def read_neurone_data(fpath, session_phase=1, protocol=None):
     Read the NeurOne signal data from a binary file.
 
     Arguments:
-       - fpath : the path to the directory holding the
+       - fpath: the path to the directory holding the
                  NeurOne measurement (i.e., the
                  directory Protocol.xml and Session.xml
                  files.
 
-       - session_phase :
+       - session_phase:
                  The phase of the measurement. Currently
                  only reading of the first phase (1) is
                  supported.
 
-       - protocol :
+       - protocol:
                   The dictionary obtained using the function
                   read_neurone_protocol. This argument is optional
                   and if not given, the protocol is automatically read.
@@ -158,17 +165,17 @@ def read_neurone_data_info(fpath, session_phase=1, protocol=None):
     Read the sample and channel count from a NeurOne signal binary file.
 
     Arguments:
-       - fpath : the path to the directory holding the
+       - fpath: the path to the directory holding the
                  NeurOne measurement (i.e., the
                  directory Protocol.xml and Session.xml
                  files.
 
-       - session_phase :
+       - session_phase:
                  The phase of the measurement. Currently
                  only reading of the first phase (1) is
                  supported.
 
-       - protocol :
+       - protocol:
                   The dictionary obtained using the function
                   read_neurone_protocol. This argument is optional
                   and if not given, the protocol is automatically read.
@@ -234,17 +241,17 @@ def read_neurone_events(fpath, session_phase=1, sampling_rate=None):
     Read the NeurOne events from a binary file.
 
     Arguments:
-       - fpath : the path to the directory holding the
+       - fpath: the path to the directory holding the
                  NeurOne measurement (i.e., the
                  directory Protocol.xml and Session.xml
                  files.
 
-       - sampling_rate :
+       - sampling_rate:
                  The sampling rate of the recording.
                  This argument is optional and if not given,
                  the protocol is automatically read.
 
-       - session_phase :
+       - session_phase:
                  The phase of the measurement. Currently
                  only reading of the first phase (1) is
                  supported.

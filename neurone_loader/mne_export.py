@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------------
 #  This file (mne_export.py) is part of neurone_loader                         -
 #  (https://www.github.com/heilerich/neurone_loader)                           -
@@ -8,8 +9,8 @@
 #  Please see the file LICENSE for details.                                    -
 # ------------------------------------------------------------------------------
 """
-This module provides the metaclass `MneExportable` that allows subclasses implementing all the metaclass's properties
-to be converted to a mne.io.RawArray.
+Provides the metaclass `MneExportable` that allows subclasses implementing all the metaclass's properties
+to be converted to a `mne.io.RawArray`.
 """
 
 import logging
@@ -19,53 +20,17 @@ from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
+# compatible with Python 2 *and* 3:
+ABC = abc.ABCMeta('ABC', (object,), {'__slots__': ()})
 
-class MneExportable(abc.ABC):
+
+class MneExportable(ABC):
     """
 
     A metaclass that provides a function allowing objects that expose data, events, channels and sampling_rate
     properties to be converted to an mne.io.RawArray.
 
     """
-
-    @property
-    @abc.abstractmethod
-    def data(self):
-        """
-        :return: should contain data in (n_samples, n_channels) shape
-        :rtype: numpy.ndarray
-        """
-
-    @abc.abstractmethod
-    def clear_data(self):
-        """
-        Delete loaded data from memory
-        """
-
-    @property
-    @abc.abstractmethod
-    def events(self):
-        """
-        :return: should contain the events as a DataFrame, required fields are `StartSampleIndex`, `StopSampleIndex`
-        and `Code`. Additional fields are ignored.
-        :rtype: pandas.DataFrame
-        """
-
-    @property
-    @abc.abstractmethod
-    def channels(self):
-        """
-        :return: should contain the names of channels, matching the sequence used in the data property
-        :rtype: list[str]
-        """
-
-    @property
-    @abc.abstractmethod
-    def sampling_rate(self):
-        """
-        :return: should contain the used sampling rate
-        :rtype: int
-        """
 
     def _import_mne(self):
         try:
@@ -74,18 +39,20 @@ class MneExportable(abc.ABC):
             self._mne = mne
             return True
         except ImportError:
-            logger.error("To convert data to an MNE object you must install MNE"
+            logger.error("To convert data to an MNE object you must install MNE "
                          "and all its dependencies.")
             return False
 
     def to_mne(self, substitute_zero_events_with=None, copy=False):
         """
         Convert loaded data to a mne.io.RawArray
-        :param substitute_zero_events_with: events with code = 0 are not supported by MNE, if this parameter is set, the
-        event code 0 will be substituted with this parameter
-        :param copy: if False (default) original data will be removed from memory to save space while creating the
-        mne.io.RawArray. If the data is needed again it must be reloaded from disk
-        :type substitute_zero_events_with: None (default) or int
+
+        :param substitute_zero_events_with: None. events with code = 0 are not supported by MNE, if this parameter is
+                                            set, the event code 0 will be substituted with this parameter
+        :param copy: False. If False, the original data will be removed from memory to save space while creating the
+                     mne.io.RawArray. If the data is needed again it must be reloaded from disk
+        :type substitute_zero_events_with: None or int
+        :type copy: bool
         :return: the converted data
         :rtype: mne.io.RawArray
         :raises ImportError: if the mne package is not installed
@@ -93,7 +60,7 @@ class MneExportable(abc.ABC):
 
         if not hasattr(self, '_mne'):
             if not self._import_mne():
-                return
+                raise ImportError
         mne = self._mne
 
         events = self.events
@@ -128,8 +95,8 @@ class MneExportable(abc.ABC):
             event_codes = np.unique(events['Code'].values)
             assert type(substitute_zero_events_with) is int, 'substitute_zero_events_with must be int or None'
             assert substitute_zero_events_with not in event_codes, \
-                "the original data can't contain event with code substitute_zero_events_with ({})" \
-                    .format(substitute_zero_events_with)
+                """the original data can't contain event with code
+                substitute_zero_events_with ({})""".format(substitute_zero_events_with)
 
         stim_channel_names = ['STI 014']
         stim_channels = [np.zeros(data_length, dtype=data_dtype)]
@@ -187,6 +154,55 @@ class MneExportable(abc.ABC):
         cnt = cnt.add_channels([stim_cnt])
 
         return cnt
+
+    @property
+    @abc.abstractmethod
+    def data(self):
+        """
+        Abstract Property
+
+        :return: should contain data in (n_samples, n_channels) shape
+        :rtype: numpy.ndarray
+        """
+
+    @abc.abstractmethod
+    def clear_data(self):
+        """
+        Abstract Method
+
+        Should delete loaded data from memory
+        """
+
+    @property
+    @abc.abstractmethod
+    def events(self):
+        """
+        Abstract Property
+
+        :return: should contain the events as a DataFrame, required fields are `StartSampleIndex`, `StopSampleIndex`
+                 and `Code`. Additional fields are ignored.
+        :rtype: pandas.DataFrame
+        """
+
+    @property
+    @abc.abstractmethod
+    def channels(self):
+        """
+        Abstract Property
+
+        :return: should contain the names of channels, matching the sequence used in the data property
+        :rtype: list[str]
+        """
+
+    @property
+    @abc.abstractmethod
+    def sampling_rate(self):
+        """
+        Abstract Property
+
+        :return: should contain the used sampling rate
+        :rtype: int
+        """
 
 
 _default_eeg_channel_names = ['Fp1', 'Fpz', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8', 'FC5', 'FC1', 'FC2', 'FC6', 'M1', 'T7',
