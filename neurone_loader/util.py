@@ -21,7 +21,7 @@ def get_logger():
     :rtype: logging.Logger
     """
     lgr = logging.getLogger('neurone_loader')
-    lgr.setLevel(logging.DEBUG)
+    lgr.setLevel(logging.INFO)
     fmt = logging.Formatter(fmt='%(asctime)s [%(name)s.%(module)s]:%(levelname)s: %(message)s', datefmt='%I:%M:%S')
     stdout_handler = logging.StreamHandler(sys.stdout)
     stdout_handler.setLevel(logging.NOTSET)
