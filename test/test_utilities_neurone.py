@@ -14,7 +14,7 @@ from zodbpickle import pickle
 import os
 from hashlib import sha256
 from multiprocessing import Pool
-import sys
+import numpy as np
 
 from neurone_loader.neurone import *
 
@@ -49,11 +49,17 @@ class TestDataReading(TestCase):
 
 class TestStability(TestCase):
     def test_event_stability(self):
-        with open(os.path.join(data_path, 'ses1_1_events.pkl'), 'rb') as f:
-            if sys.version_info >= (3, 0):
-                true_events = pickle.load(f, errors='bytes')
-            else:
-                true_events = pickle.load(f)
+        true_events = {
+            'events': np.load(os.path.join(data_path, 'ses1_1_events.npy')),
+            'dtype': np.dtype([('Revision', '<i4'), ('Type', '<i4'),
+                               ('SourcePort', '<i4'), ('ChannelNumber', '<i4'),
+                               ('Code', '<i4'), ('StartSampleIndex', '<i8'),
+                               ('StopSampleIndex', '<i8'), ('DescriptionLength', '<i8'),
+                               ('DescriptionOffset', '<i8'), ('DataLength', '<i8'),
+                               ('DataOffset', '<i8'), ('StartTime', '<i8'),
+                               ('StopTime', '<i8')])
+        }
+
         read_events = read_neurone_events(os.path.join(data_path, sessions[0]))
         # noinspection PyUnresolvedReferences
         self.assertTrue((true_events['events'] == read_events['events']).all())

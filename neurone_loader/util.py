@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ------------------------------------------------------------------------------
-#  This file (__init__.py) is part of neurone_loader                           -
+#  This file (util.py) is part of neurone_loader                               -
 #  (https://www.github.com/heilerich/neurone_loader)                           -
 #  Copyright © 2019 Felix Heilmeyer.                                           -
 #                                                                              -
@@ -8,11 +8,26 @@
 #  https://opensource.org/licenses/mit-license.php                             -
 #  Please see the file LICENSE for details.                                    -
 # ------------------------------------------------------------------------------
-"""
-Provides classes to load, represent and export data recorded with the Bittium NeurOne device.
-Use :py:class:`Recording`, :py:class:`Session` or :py:class:`Phase` to represent the respective part of the data.
-"""
 
-from .loader import Recording, Session, Phase
+import logging
+import sys
 
-__version__ = '1.0.1'
+
+def get_logger():
+    """
+    Get the default logger for this module and set default settings.
+
+    :return: the logger
+    :rtype: logging.Logger
+    """
+    lgr = logging.getLogger('neurone_loader')
+    lgr.setLevel(logging.INFO)
+    fmt = logging.Formatter(fmt='%(asctime)s [%(name)s.%(module)s]:%(levelname)s: %(message)s', datefmt='%I:%M:%S')
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(logging.NOTSET)
+    stdout_handler.setFormatter(fmt)
+    lgr.addHandler(stdout_handler)
+    return lgr
+
+
+logger = get_logger()

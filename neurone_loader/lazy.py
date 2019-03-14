@@ -13,10 +13,8 @@ Provides the `Lazy` decorator to construct properties that are evaluated only on
 `preloadable` decorator to enable optional preloading of all lazy properties on initialization.
 """
 
-import logging
 from functools import update_wrapper
-
-logger = logging.getLogger(__name__)
+from .util import logger
 
 
 # noinspection PyMethodOverriding

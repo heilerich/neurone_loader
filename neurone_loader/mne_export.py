@@ -13,12 +13,10 @@ Provides the metaclass `MneExportable` that allows subclasses implementing all t
 to be converted to a `mne.io.RawArray`.
 """
 
-import logging
 import numpy as np
 import abc
 from copy import deepcopy
-
-logger = logging.getLogger(__name__)
+from .util import logger
 
 # compatible with Python 2 *and* 3:
 ABC = abc.ABCMeta('ABC', (object,), {'__slots__': ()})
@@ -70,7 +68,7 @@ class MneExportable(ABC):
                 (['emg'], 'emg'),
                 (['eog'], 'eog'),
                 (['ecg'], 'ecg'),
-                (['Microphone'], 'bio'),
+                (['Microphone', 'GSR'], 'bio'),
                 (_default_eeg_channel_names, 'eeg')
             ]
             for starts, ch_type in mappings:
