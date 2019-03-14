@@ -63,10 +63,10 @@ class MneExportable(ABC):
                                       data contains any channel not in the list of well-known channel names and not in
                                       this mapping the conversion will raise UnknownChannelException. You can choose
                                       to map any unknown channel to one specific type e.g. {'#unkown': 'eeg'}. For a list
-                                      of available types see the documentation of mne.pick_types
+                                      of available types see the documentation of :func:`pick_types`
         :type substitute_zero_events_with: None or int
         :type copy: bool
-        :type channel_type_mappings: dict
+        :type channel_type_mappings: None or dict
         :return: the converted data
         :rtype: mne.io.RawArray
         :raises ImportError: if the mne package is not installed
