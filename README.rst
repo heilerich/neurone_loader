@@ -1,7 +1,7 @@
 NeuroneLoader
 =============
 
-.. image:: https://travis-ci.org/heilerich/neurone_loader.svg?branch=master)]
+.. image:: https://travis-ci.org/heilerich/neurone_loader.svg?branch=master
    :target: https://travis-ci.org/heilerich/neurone_loader
    :alt: Build Status
 
