@@ -22,6 +22,16 @@ from .util import logger
 ABC = abc.ABCMeta('ABC', (object,), {'__slots__': ()})
 
 
+class UnknownChannelException(Exception):
+    """
+
+    Raised if data contains a channel name that is neither in a list of well-known channels nor in an (optional) list
+    of user supplied channel name to channel type mappings.
+
+    """
+    pass
+
+
 class MneExportable(ABC):
     """
 
@@ -41,25 +51,38 @@ class MneExportable(ABC):
                          "and all its dependencies.")
             return False
 
-    def to_mne(self, substitute_zero_events_with=None, copy=False):
+    def to_mne(self, substitute_zero_events_with=None, copy=False, channel_type_mappings=None):
         """
         Convert loaded data to a mne.io.RawArray
 
         :param substitute_zero_events_with: None. events with code = 0 are not supported by MNE, if this parameter is
                                             set, the event code 0 will be substituted with this parameter
-        :param copy: False. If False, the original data will be removed from memory to save space while creating the
-                     mne.io.RawArray. If the data is needed again it must be reloaded from disk
+        :param copy: False. If False (default), the original data will be removed from memory to save space while
+                     creating the mne.io.RawArray. If the data is needed again it must be reloaded from disk
+        :param channel_type_mappings: Optional. You can provide a dictionary of channel name to type mappings. If the
+                                      data contains any channel not in the list of well-known channel names and not in
+                                      this mapping the conversion will raise UnknownChannelException. You can choose
+                                      to map any unknown channel to one specific type e.g. {'#unkown': 'eeg'}. For a list
+                                      of available types see the documentation of mne.pick_types
         :type substitute_zero_events_with: None or int
         :type copy: bool
+        :type channel_type_mappings: dict
         :return: the converted data
         :rtype: mne.io.RawArray
         :raises ImportError: if the mne package is not installed
+        :raises UnknownChannelException: if a unknown channel name is encountered (see channel_type_mappings parameter)
         """
 
         if not hasattr(self, '_mne'):
             if not self._import_mne():
                 raise ImportError
         mne = self._mne
+
+        allowed_channel_types = ['meg', 'eeg', 'stim', 'eog', 'ecg', 'emg', 'misc', 'resp', 'chpi', 'exci', 'ias',
+                                 'syst', 'seeg', 'dipole', 'gof', 'bio', 'ecog', 'fnirs']
+        if channel_type_mappings is not None:
+            for value in channel_type_mappings.values():
+                assert value in allowed_channel_types, '{type} is not a recognized mne channel type'.format(type=value)
 
         events = self.events
 
@@ -71,14 +94,26 @@ class MneExportable(ABC):
                 (['Microphone', 'GSR'], 'bio'),
                 (_default_eeg_channel_names, 'eeg')
             ]
+
             for starts, ch_type in mappings:
                 for start in starts:
                     if name.lower().startswith(start.lower()):
                         return ch_type
-            logger.warning('Channel {channel} will be classified as EEG channel '
-                           'but is not in the list of common EEG channel names'
-                           .format(channel=name))
-            return 'eeg'
+
+            if channel_type_mappings is not None:
+                if name in channel_type_mappings:
+                    assert channel_type_mappings[name] in allowed_channel_types, '{type} is not a recognized mne' \
+                                                                                 ' channel type'.format(type=value)
+                    return channel_type_mappings[name]
+                elif '#unkown' in channel_type_mappings:
+                    unknown_channel_type = channel_type_mappings['#uknown']
+                    logger.warning('Could not properly classify {channel}. It will be classified as {default} channel '
+                                   'because {default} was set as default for unknown channels.'
+                                   .format(channel=name, default=unknown_channel_type))
+                    return unknown_channel_type
+            logger.error('Encountered channel of unknown type {channel} which is not in the list of well-known channels'
+                         'and no user defined mapping was supplied.')
+            raise UnknownChannelException
 
         channel_types = list(map(_channel_type, self.channels))
         assert len(channel_types) == len(self.channels)
