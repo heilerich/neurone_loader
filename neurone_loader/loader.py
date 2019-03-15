@@ -18,6 +18,7 @@ import numpy as np
 from . import neurone as nr
 from .lazy import Lazy, preloadable
 from .mne_export import MneExportable
+from .util import logger
 
 
 # noinspection PyAbstractClass
@@ -26,6 +27,10 @@ class BaseContainer(MneExportable):
     A metaclass that provides properties for accessing data shared between all subclasses. I cannot be used itself
     as it is not implementing all required methods of its abstract superclass.
     """
+
+    def __init__(self):
+        self._dropped_channels = []
+
     @property
     def sampling_rate(self):
         """
@@ -58,6 +63,7 @@ class Phase(BaseContainer):
     :type phase: dict
     """
     def __init__(self, path, phase, protocol=None):
+        BaseContainer.__init__(self)
         self.path = path
         self.number = phase['number']
         if protocol is None:
@@ -124,6 +130,7 @@ class Session(BaseContainer):
     :type path: str
     """
     def __init__(self, path):
+        BaseContainer.__init__(self)
         self.path = path
         self._protocol = nr.read_neurone_protocol(self.path)
         self._get_meta()
@@ -138,7 +145,7 @@ class Session(BaseContainer):
     @property
     def event_codes(self):
         """
-        :return: all event codes used in the data as int32 in an numpy.ndarray
+        :return: all event codes used in the data as int32 in an :class:`numpy.ndarray`
         :rtype: numpy.ndarray
         """
         return np.unique(np.concatenate([phase.event_codes for phase in self.phases]))
@@ -146,11 +153,11 @@ class Session(BaseContainer):
     @Lazy
     def data(self):
         """
+        .. warning:: Calling this replaces the data attribute of the contained phases with a view on the concatenated
+             data to save memory. Keep this in mind when manipulating the contained sessions.
+
         :return: concatenated data of all phases with shape (samples, channels) in µV
         :rtype: numpy.ndarray
-
-        .. warning:: Calling this replaces the data attribute of the contained phases with a view on the concatenated
-                     data to save memory. Keep this in mind when manipulating the contained sessions.
         """
         phases = sorted(self.phases, key=lambda phase: phase.number)
         new_array = None
@@ -236,6 +243,7 @@ class Recording(BaseContainer):
     :type path: str
     """
     def __init__(self, path):
+        BaseContainer.__init__(self)
         self.path = path
         self._find_sessions()
         
@@ -377,7 +385,7 @@ class Recording(BaseContainer):
         Returns the channels used in all sessions and makes sure they're equal
 
         :return: ordered list of all channel names, read from the session protocols
-        :rtype: List[str]
+        :rtype: list[str]
         """
         assert len(set([''.join(s.channels) for s in self.sessions])) <= 1, \
             "Channel names shouldn't change between sessions"

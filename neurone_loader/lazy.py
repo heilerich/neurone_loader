@@ -72,9 +72,11 @@ class Lazy(property):
         update_wrapper(self, fget)
 
         if type(self.__doc__) is str:
-            self.__doc__ += """
-            .. note:: This property is a lazy property. For details see :py:class:`.lazy.Lazy`.
-            """
+            self.__doc__ = """
+            .. note:: This property is a lazy property. For details see :py:class:`.lazy.Lazy`
+            
+            {old_doc}
+            """.format(old_doc=self.__doc__)
 
     def __get__(self, instance, owner):
         if instance is None:
