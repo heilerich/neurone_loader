@@ -26,6 +26,7 @@ except ImportError:
     import unittest.mock as mock
 
 from neurone_loader.loader import Recording, Session, Phase
+from neurone_loader.mne_export import UnknownChannelException
 
 data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data')
 bbci_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data', 'converted_1-1_250Hz.BBCI.mat')
@@ -124,17 +125,32 @@ class TestMNEImport(TestCase):
                 container.to_mne()
 
 
-class TestChannelWarning(TestCase):
-    @mock.patch('logging.Logger.warning')
-    def test_uncommon_name(self, mocker):
+class TestChannelMapping(TestCase):
+    @classmethod
+    def setUpClass(cls):
         uncommon_name = 'UncommonChannel'
         rec = Recording(data_path)
         phase = rec.sessions[0].phases[0]
         phase.channels[0] = uncommon_name
-        cnt = phase.to_mne(substitute_zero_events_with=10)
-        self.assertEqual(cnt.ch_names[0], uncommon_name)
-        self.assertEqual(mne.io.pick.channel_type(cnt.info, 0), 'eeg')
-        self.assertIn(uncommon_name, mocker.call_args_list[0][0][0])  # channel name in warning message
+
+        cls.phase = phase
+        cls.ch_name = uncommon_name
+
+    @mock.patch('logging.Logger.warning')
+    def test_unknown_name_mapping(self, mocker):
+        cnt = self.phase.to_mne(substitute_zero_events_with=10, channel_type_mappings={'#unknown': 'misc'})
+        self.assertEqual(cnt.ch_names[0], self.ch_name)
+        self.assertEqual(mne.io.pick.channel_type(cnt.info, 0), 'misc')
+        self.assertIn(self.ch_name, mocker.call_args_list[0][0][0])  # channel name in warning message
+
+    def test_no_mapping(self):
+        with self.assertRaises(UnknownChannelException):
+            self.phase.to_mne(substitute_zero_events_with=10)
+
+    def test_explicit_mapping(self):
+        cnt = self.phase.to_mne(substitute_zero_events_with=10, channel_type_mappings={self.ch_name: 'misc'})
+        self.assertEqual(cnt.ch_names[0], self.ch_name)
+        self.assertEqual(mne.io.pick.channel_type(cnt.info, 0), 'misc')
 
 
 class TestAgainstBBCI(TestCase):
