@@ -18,7 +18,7 @@ import numpy as np
 from . import neurone as nr
 from .lazy import Lazy, preloadable
 from .mne_export import MneExportable
-from .util import logger
+from .util import logger, doc_inherit
 
 
 # noinspection PyAbstractClass
@@ -29,7 +29,7 @@ class BaseContainer(MneExportable):
     """
 
     def __init__(self):
-        self._dropped_channels = []
+        self._dropped_channels = set()
 
     @property
     def sampling_rate(self):
@@ -45,11 +45,24 @@ class BaseContainer(MneExportable):
         :return: ordered list of all channel names, read from the session protocol
         :rtype: list[str]
         """
+        # TODO: remove dropped channels
         return self._protocol['channels'] if hasattr(self, '_protocol') else None
 
     def _has_data(self):
         private_attribute_name = getattr(type(self), 'data').private_name
         return hasattr(self, private_attribute_name)
+
+    def drop_channels(self, channels_to_drop):
+        """
+        Remove specified channels from loaded data. Dropped channels will be remembered and when data is cleared from
+        memory and reloaded from disk the channels will get removed again. To get them back create a new object of this
+        type to reload from disk.
+
+        :param channels_to_drop: names of channels to drop
+        :type channels_to_drop: list[str]
+        """
+        logger.debug('Dropping channels {channels}'.format(channels=set(channels_to_drop)))
+        self._dropped_channels |= set(channels_to_drop)
 
 
 @preloadable
@@ -96,6 +109,7 @@ class Phase(BaseContainer):
         :return: recorded data with shape (samples, channels) in µV
         :rtype: numpy.ndarray
         """
+        # TODO: remove dropped channels
         return nr.read_neurone_data(self.path, self.number, self._protocol) / 1000  # data is nanovolts
 
     @Lazy
@@ -119,6 +133,12 @@ class Phase(BaseContainer):
         Remove loaded data from memory
         """
         del self.data
+
+    # noinspection PyMissingOrEmptyDocstring
+    @doc_inherit
+    def drop_channels(self, channels_to_drop):
+        BaseContainer.drop_channels(self, channels_to_drop)
+        # TODO: remove from data if loaded
 
 
 @preloadable
@@ -180,6 +200,7 @@ class Session(BaseContainer):
             start, stop = slices[index]
             p.data = new_array[start:stop]
 
+        # TODO: remove dropped channels
         return new_array
 
     def clear_data(self):
@@ -232,6 +253,13 @@ class Session(BaseContainer):
         assert len(set([p.n_channels for p in self.phases])) <= 1, \
             "The number of channels shouldn't change between phases"
         return self.phases[0].n_channels if len(self.phases) > 0 else 0
+
+    # noinspection PyMissingOrEmptyDocstring
+    @doc_inherit
+    def drop_channels(self, channels_to_drop):
+        BaseContainer.drop_channels(self, channels_to_drop)
+        # TODO: remove from data if loaded and extend dropped_channels array in phases
+        # TODO: if not loaded: call drop methods of phases
 
 
 @preloadable
@@ -389,4 +417,12 @@ class Recording(BaseContainer):
         """
         assert len(set([''.join(s.channels) for s in self.sessions])) <= 1, \
             "Channel names shouldn't change between sessions"
+        # TODO: remove dropped channels
         return self.sessions[0].channels if len(self.sessions) > 0 else 0
+
+    # noinspection PyMissingOrEmptyDocstring
+    @doc_inherit
+    def drop_channels(self, channels_to_drop):
+        BaseContainer.drop_channels(self, channels_to_drop)
+        # TODO: remove from data if loaded and extend dropped_channels array in session & phases
+        # TODO: if not loaded: call drop methods of sessions

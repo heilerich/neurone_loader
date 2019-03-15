@@ -136,3 +136,31 @@ class TestContainerHierarchy(TestCase):
 
     def tearDown(self):
         del self.rec
+
+
+class TestDropping(TestCase):
+    def test_warnings(self):
+        # TODO: test if session, phases and recordings warn if nonexistent channel is dropped
+        self.fail()
+
+    def test_drop_from_unloaded_phase(self):
+        self.fail()
+
+    def test_drop_from_unloaded_session(self):
+        # TODO: check if change is reflected in phases
+        self.fail()
+
+    def test_drop_from_unloaded_recording(self):
+        # TODO: check if change is reflected in sessions and phases
+        self.fail()
+
+    def test_drop_from_loaded_phase(self):
+        self.fail()
+
+    def test_drop_from_loaded_session(self):
+        # TODO: check if change is reflected in phases
+        self.fail()
+
+    def test_drop_from_loaded_recording(self):
+        # TODO: check if change is reflected in sessions and phases
+        self.fail()
