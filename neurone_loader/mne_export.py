@@ -62,12 +62,9 @@ class MneExportable(ABC):
         :param channel_type_mappings: Optional. You can provide a dictionary of channel name to type mappings. If the
                                       data contains any channel not in the list of well-known channel names and not in
                                       this mapping the conversion will raise UnknownChannelException. You can choose
-                                      to map any unknown channel to one specific type e.g. {'#unkown': 'eeg'}. For a
+                                      to map any unknown channel to one specific type e.g. {'#unknown': 'eeg'}. For a
                                       list of available types see the documentation of :func:`mne.pick_types`. This
-                                      setting takes precedence over the built-in list of common channel names. Channel
-                                      names in this dictionary are mapped on with `startswith(name.lower())`, so for
-                                      example the mapping {'eog': 'eog'} will categorise all of EOG_R, EOG_L and EOG_C
-                                      as EOG channels.
+                                      setting takes precedence over the built-in list of common channel names.
         :type substitute_zero_events_with: None or int
         :type copy: bool
         :type channel_type_mappings: None or dict
@@ -113,8 +110,8 @@ class MneExportable(ABC):
                     return channel_type_mappings[name]
                 elif _get_common_type(name) is not None:
                     return _get_common_type(name)
-                elif '#unkown' in channel_type_mappings:
-                    unknown_channel_type = channel_type_mappings['#uknown']
+                elif '#unknown' in channel_type_mappings:
+                    unknown_channel_type = channel_type_mappings['#unknown']
                     logger.warning('Could not properly classify {channel}. It will be classified as {default} channel '
                                    'because {default} was set as default for unknown channels.'
                                    .format(channel=name, default=unknown_channel_type))
@@ -123,8 +120,8 @@ class MneExportable(ABC):
                 if _get_common_type(name) is not None:
                     return _get_common_type(name)
 
-            logger.error('Encountered channel of unknown type {channel} which is not in the list of well-known channels'
-                         'and no user defined mapping was supplied.')
+            logger.error('Encountered channel ({channel}) which is not in the list of well-known channels'
+                         'and no user defined mapping was supplied.'.format(channel=name))
             raise UnknownChannelException
 
         channel_types = list(map(_channel_type, self.channels))
