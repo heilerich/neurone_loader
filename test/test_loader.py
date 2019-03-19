@@ -146,22 +146,21 @@ class TestContainerHierarchy(TestCase):
 
 class TestChannelDroppingPhase(TestCase):
     class ChannelState:
-        data_channel_count = None
-        data_before_channel_one = None
-        data_after_channel_oneplus = None
-        data_before_channel_two = None
-        data_after_channel_two = None
+        channel_count = None
+        data = None
+        mask = None
 
     def commonSetUp(self):
         self.container = Recording(data_path)
         self.invalid_channel = 'UnknownChannel'
+        self.save_samples = 100
 
-        index_one = np.random.randint(1, len(self.container.channels))
-        index_two = np.random.rand(4, len(self.container.channels))
+        index_one = np.random.randint(1, len(self.container.channels) - 1)
+        index_two = np.random.randint(4, len(self.container.channels))
         while np.abs(index_one - index_two) < 3:
-            index_two = np.random.rand(4, len(self.container.channels))
+            index_two = np.random.randint(4, len(self.container.channels))
 
-        self.valid_indexes = sorted([index_one, index_one + 1, index_two])
+        self.valid_indexes = [index_one, index_one + 1, index_two]
         self.valid_channels = [self.container.channels[i] for i in self.valid_indexes]
 
         self.states = dict()
@@ -177,39 +176,26 @@ class TestChannelDroppingPhase(TestCase):
 
     def save_state(self, container, state_name):
         state = self.ChannelState()
-        state.data_channel_count = container.n_channels
-
-        state.data_before_channel_one = container.data[self.valid_indexes[0] - 1]
-        state.data_after_channel_oneplus = container.data[self.valid_indexes[1] + 1]
-
-        state.data_before_channel_two = container.data[self.valid_indexes[2] - 1]
-        state.data_after_channel_two = container.data[self.valid_indexes[2] + 1]
-
+        state.channel_count = container.n_channels
+        state.data = container.data[:self.save_samples].copy()
+        state.mask = np.ones(state.data.shape[1], np.bool)
+        for i in self.valid_indexes:
+            state.mask[i] = False
         self.states[state_name] = state
 
     def check_state(self, container, state_name):
         state = self.states[state_name]
 
-        self.assertEqual(state.data_channel_count - len(self.valid_channels), container.n_channels)
+        self.assertEqual(state.channel_count - len(self.valid_channels), container.n_channels)
         self.assertTrue(set(self.valid_channels).isdisjoint(set(container.channels)))
 
-        new_data_before_channel_one = container.data[self.valid_indexes[0] - 1]
-        new_data_channel_one = container.data[self.valid_indexes[0]]
-
-        new_data_before_channel_two = container.data[self.valid_indexes[2] - 1]
-        new_data_channel_two = container.data[self.valid_indexes[2]]
-
-        self.assertTrue(np.all(state.data_before_channel_one == new_data_before_channel_one))
-        self.assertTrue(np.all(state.data_after_channel_oneplus == new_data_channel_one))
-
-        self.assertTrue(np.all(state.data_before_channel_two == new_data_before_channel_two))
-        self.assertTrue(np.all(state.data_after_channel_two == new_data_channel_two))
+        self.assertTrue(np.all(container.data[:self.save_samples] == state.data.T[state.mask].T))
 
     def do_drop(self):
         self.assertTrue(set(self.valid_channels).issubset(set(self.container.channels)))
         # drop oneplus in separate step to test dropping in sequence?
         self.container.drop_channels((self.valid_channels[0], self.valid_channels[2]))
-        self.container.drop_channels((self.valid_channels[1]))
+        self.container.drop_channels((self.valid_channels[1],))
 
     def test_drop_before_loading(self):
         self.save_state(self.container, 'main_container')
@@ -245,19 +231,19 @@ class TestChannelDroppingSession(TestChannelDroppingPhase):
         # Also test change propagation to phase
         self.save_state(self.container.phases[0], 'phase0')
         TestChannelDroppingPhase.test_persistence(self)
-        self.check_state(self.container.phases[0], 'main_container')
+        self.check_state(self.container.phases[0], 'phase0')
 
     def test_drop_before_loading(self):
         # Also test change propagation to phase
         self.save_state(self.container.phases[0], 'phase0')
         TestChannelDroppingPhase.test_drop_before_loading(self)
-        self.check_state(self.container.phases[0], 'main_container')
+        self.check_state(self.container.phases[0], 'phase0')
 
     def test_drop_after_loading(self):
         # Also test change propagation to phase
         self.save_state(self.container.phases[0], 'phase0')
         TestChannelDroppingPhase.test_drop_after_loading(self)
-        self.check_state(self.container.phases[0], 'main_container')
+        self.check_state(self.container.phases[0], 'phase0')
 
 
 class TestChannelDroppingRecording(TestChannelDroppingPhase):

@@ -42,13 +42,12 @@ class BaseContainer(MneExportable):
         return self._protocol['meta']['sampling_rate'] if hasattr(self, '_protocol') else None
 
     def _protocol_channels(self):
-        if not hasattr(self, '_protocol'):
-            return []
+        return self._protocol['channels'] if hasattr(self, '_protocol') else []
 
     def _drop_indexes(self):
-        return sorted([indexOf(self._protocol_channels, channel) for channel in self._dropped_channels], reverse=True)
+        return sorted([indexOf(self._protocol_channels(), channel) for channel in self._dropped_channels], reverse=True)
 
-    @property
+    @Lazy
     def channels(self):
         """
         :return: ordered list of all channel names, read from the session protocol
@@ -62,6 +61,9 @@ class BaseContainer(MneExportable):
 
     def _extend_droplist(self, channels_to_drop):
         self._dropped_channels |= set(channels_to_drop)
+        if type(getattr(type(self), 'channels')) is Lazy:
+            if hasattr(self, getattr(type(self), 'channels').private_name):
+                self.channels = [channel for channel in self.channels if channel not in self._dropped_channels]
 
     def drop_channels(self, channels_to_drop):
         """
@@ -72,9 +74,13 @@ class BaseContainer(MneExportable):
         :param channels_to_drop: names of channels to drop
         :type channels_to_drop: list[str]
         """
-        drop_set = set(channels_to_drop) - self._dropped_channels
+        drop_set = (set(channels_to_drop) - self._dropped_channels).intersection(set(self.channels))
+        not_dropping = set(channels_to_drop) - drop_set
+        if len(not_dropping) > 0:
+            logger.warning('Not dropping channels {channels} since they don\'t exist or have already been dropped'
+                           .format(channels=', '.join(not_dropping)))
         logger.debug('Dropping channels {channels}'.format(channels=', '.join(drop_set)))
-        self._extend_droplist(channels_to_drop)
+        self._extend_droplist(drop_set)
 
 
 @preloadable
@@ -124,7 +130,7 @@ class Phase(BaseContainer):
         data = nr.read_neurone_data(self.path, self.number, self._protocol) / 1000  # data is nanovolts
         return np.delete(data, self._drop_indexes(), axis=1)
 
-    @Lazy
+    @property
     def n_samples(self):
         """
         :return: the number of channels, inferred from the binary recording's file size
@@ -132,14 +138,15 @@ class Phase(BaseContainer):
         """
         return nr.read_neurone_data_info(self.path, self.number, self._protocol).n_samples
 
-    @Lazy
+    @property
     def n_channels(self):
         """
         :return: the number of channels, read from the session protocol
         :rtype: int
         """
-        return nr.read_neurone_data_info(self.path, self.number, self._protocol).n_channels \
-               - len(self._dropped_channels)
+        return nr.read_neurone_data_info(self.path,
+                                         self.number,
+                                         self._protocol).n_channels - len(self._dropped_channels)
 
     def clear_data(self):
         """
@@ -151,7 +158,8 @@ class Phase(BaseContainer):
     @doc_inherit
     def drop_channels(self, channels_to_drop):
         if self._has_data():
-            drop_indexes = sorted([indexOf(self.channels, channel) for channel in self._dropped_channels],
+            drop_indexes = sorted([indexOf(self.channels, channel) for channel in channels_to_drop
+                                   if channel in self.channels],
                                   reverse=True)  # ignore channels that were dropped before
             # noinspection PyAttributeOutsideInit
             self.data = np.delete(self.data, drop_indexes, axis=1)
@@ -200,16 +208,15 @@ class Session(BaseContainer):
         new_array = None
         slices = []
         for p in phases:
+            p.drop_channels(list(self._dropped_channels))
             if new_array is None:
-                new_array = np.copy(p.data)
-                del p.data
+                new_array = np.copy(p.data, order='C')
                 slices.append((0, len(p.data)))
             else:
                 old_length = len(new_array)
                 shape = list(new_array.shape)
                 shape[0] += len(p.data)
                 new_array.resize(shape, refcheck=False)  # data is explicitly copied above and following slices are
-                p.drop_channels(list(self._dropped_channels))
                 new_array[-len(p.data):] = p.data  # appended hence also copied, this should be fine
                 slices.append((old_length, old_length + len(p.data)))
             del p.data
@@ -276,12 +283,17 @@ class Session(BaseContainer):
     def drop_channels(self, channels_to_drop):
         if self._has_data():
             # noinspection PyAttributeOutsideInit
-            drop_indexes = sorted([indexOf(self.channels, channel) for channel in self._dropped_channels],
+            drop_indexes = sorted([indexOf(self.channels, channel) for channel in channels_to_drop
+                                   if channel in self.channels],
                                   reverse=True)  # ignore channels that were dropped before
             # noinspection PyAttributeOutsideInit
             self.data = np.delete(self.data, drop_indexes, axis=1)
+            p_offset = 0
             for phase in self.phases:
                 phase._extend_droplist(channels_to_drop)
+                data_length = phase.data.shape[0]
+                phase.data = self.data[p_offset:p_offset + data_length]
+                p_offset += data_length
         else:
             for phase in self.phases:
                 phase.drop_channels(channels_to_drop)
@@ -342,15 +354,15 @@ class Recording(BaseContainer):
             phases = sorted(s.phases, key=lambda phase: phase.number)
             phase_slices = []
             for p in phases:
+                p.drop_channels(list(self._dropped_channels))
                 if new_array is None:
-                    new_array = np.copy(p.data)
+                    new_array = np.copy(p.data, order='C')
                     phase_slices.append((0, len(p.data)))
                 else:
                     old_phase_length = len(new_array)
                     shape = list(new_array.shape)
                     shape[0] += len(p.data)
                     new_array.resize(shape, refcheck=False)  # data is explicitly copied above and following slices are
-                    p.drop_channels(list(self._dropped_channels))
                     new_array[-len(p.data):] = p.data  # appended hence also copied, this should be fine
                     phase_slices.append((old_phase_length, old_phase_length + len(p.data)))
                 del p.data
@@ -452,13 +464,24 @@ class Recording(BaseContainer):
     def drop_channels(self, channels_to_drop):
         if self._has_data():
             # noinspection PyAttributeOutsideInit
-            drop_indexes = sorted([indexOf(self.channels, channel) for channel in self._dropped_channels],
+            drop_indexes = sorted([indexOf(self.channels, channel) for channel in channels_to_drop
+                                   if channel in self.channels],
                                   reverse=True)  # ignore channels that were dropped before
             # noinspection PyAttributeOutsideInit
             self.data = np.delete(self.data, drop_indexes, axis=1)
+            s_offset = 0
+            p_offset = 0
+            # update views and droplists
             for session in self.sessions:
+                session._extend_droplist(channels_to_drop)
+                data_length = session.data.shape[0]
+                session.data = self.data[s_offset:s_offset + data_length]
+                s_offset += data_length
                 for phase in session.phases:
                     phase._extend_droplist(channels_to_drop)
+                    data_length = phase.data.shape[0]
+                    phase.data = self.data[p_offset:p_offset + data_length]
+                    p_offset += data_length
         else:
             for session in self.sessions:
                 session.drop_channels(channels_to_drop)
