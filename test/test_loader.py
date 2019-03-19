@@ -177,7 +177,7 @@ class TestChannelDroppingPhase(TestCase):
 
     def save_state(self, container, state_name):
         state = self.ChannelState()
-        state.data_channel_count = len(container.channels)
+        state.data_channel_count = container.n_channels
 
         state.data_before_channel_one = container.data[self.valid_indexes[0] - 1]
         state.data_after_channel_oneplus = container.data[self.valid_indexes[1] + 1]
@@ -190,7 +190,7 @@ class TestChannelDroppingPhase(TestCase):
     def check_state(self, container, state_name):
         state = self.states[state_name]
 
-        self.assertEqual(state.data_channel_count - len(self.valid_channels), len(container.channels))
+        self.assertEqual(state.data_channel_count - len(self.valid_channels), container.n_channels)
         self.assertTrue(set(self.valid_channels).isdisjoint(set(container.channels)))
 
         new_data_before_channel_one = container.data[self.valid_indexes[0] - 1]
@@ -207,7 +207,9 @@ class TestChannelDroppingPhase(TestCase):
 
     def do_drop(self):
         self.assertTrue(set(self.valid_channels).issubset(set(self.container.channels)))
-        self.container.drop_channels(self.valid_channels)
+        # drop oneplus in separate step to test dropping in sequence?
+        self.container.drop_channels((self.valid_channels[0], self.valid_channels[2]))
+        self.container.drop_channels((self.valid_channels[1]))
 
     def test_drop_before_loading(self):
         self.save_state(self.container, 'main_container')
@@ -229,6 +231,9 @@ class TestChannelDroppingPhase(TestCase):
         self.container.clear_data()
         self.container.preload()
         self.check_state(self.container, 'main_container')
+
+    def tearDown(self):
+        del self.container
 
 
 class TestChannelDroppingSession(TestChannelDroppingPhase):
