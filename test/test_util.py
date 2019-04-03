@@ -13,7 +13,7 @@ from unittest import TestCase
 from neurone_loader.util import doc_inherit
 
 
-class Parent:
+class Parent(object):
     def func_with_doc(self):
         """
         This is the docstring
