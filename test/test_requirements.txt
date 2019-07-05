@@ -1,4 +1,4 @@
-mne
+mne==0.17.0
 braindecode
 mock
 zodbpickle
