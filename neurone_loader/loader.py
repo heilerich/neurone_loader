@@ -15,9 +15,12 @@ Provides classes to load, represent and export data recorded with the Bittium Ne
 import os
 import pandas as pd
 import numpy as np
+from operator import indexOf
+
 from . import neurone as nr
 from .lazy import Lazy, preloadable
 from .mne_export import MneExportable
+from .util import logger, doc_inherit
 
 
 # noinspection PyAbstractClass
@@ -26,6 +29,10 @@ class BaseContainer(MneExportable):
     A metaclass that provides properties for accessing data shared between all subclasses. I cannot be used itself
     as it is not implementing all required methods of its abstract superclass.
     """
+
+    def __init__(self):
+        self._dropped_channels = set()
+
     @property
     def sampling_rate(self):
         """
@@ -34,17 +41,46 @@ class BaseContainer(MneExportable):
         """
         return self._protocol['meta']['sampling_rate'] if hasattr(self, '_protocol') else None
 
-    @property
+    def _protocol_channels(self):
+        return self._protocol['channels'] if hasattr(self, '_protocol') else []
+
+    def _drop_indexes(self):
+        return sorted([indexOf(self._protocol_channels(), channel) for channel in self._dropped_channels], reverse=True)
+
+    @Lazy
     def channels(self):
         """
         :return: ordered list of all channel names, read from the session protocol
         :rtype: list[str]
         """
-        return self._protocol['channels'] if hasattr(self, '_protocol') else None
+        return [channel for channel in self._protocol_channels() if channel not in self._dropped_channels]
 
     def _has_data(self):
         private_attribute_name = getattr(type(self), 'data').private_name
         return hasattr(self, private_attribute_name)
+
+    def _extend_droplist(self, channels_to_drop):
+        self._dropped_channels |= set(channels_to_drop)
+        if type(getattr(type(self), 'channels')) is Lazy:
+            if hasattr(self, getattr(type(self), 'channels').private_name):
+                self.channels = [channel for channel in self.channels if channel not in self._dropped_channels]
+
+    def drop_channels(self, channels_to_drop):
+        """
+        Remove specified channels from loaded data. Dropped channels will be remembered and when data is cleared from
+        memory and reloaded from disk the channels will get removed again. To get them back create a new object of this
+        type to reload from disk.
+
+        :param channels_to_drop: names of channels to drop
+        :type channels_to_drop: list[str]
+        """
+        drop_set = (set(channels_to_drop) - self._dropped_channels).intersection(set(self.channels))
+        not_dropping = set(channels_to_drop) - drop_set
+        if len(not_dropping) > 0:
+            logger.warning('Not dropping channels {channels} since they don\'t exist or have already been dropped'
+                           .format(channels=', '.join(not_dropping)))
+        logger.debug('Dropping channels {channels}'.format(channels=', '.join(drop_set)))
+        self._extend_droplist(drop_set)
 
 
 @preloadable
@@ -58,6 +94,7 @@ class Phase(BaseContainer):
     :type phase: dict
     """
     def __init__(self, path, phase, protocol=None):
+        BaseContainer.__init__(self)
         self.path = path
         self.number = phase['number']
         if protocol is None:
@@ -90,9 +127,10 @@ class Phase(BaseContainer):
         :return: recorded data with shape (samples, channels) in µV
         :rtype: numpy.ndarray
         """
-        return nr.read_neurone_data(self.path, self.number, self._protocol) / 1000  # data is nanovolts
+        data = nr.read_neurone_data(self.path, self.number, self._protocol) / 1000  # data is nanovolts
+        return np.delete(data, self._drop_indexes(), axis=1)
 
-    @Lazy
+    @property
     def n_samples(self):
         """
         :return: the number of channels, inferred from the binary recording's file size
@@ -100,19 +138,32 @@ class Phase(BaseContainer):
         """
         return nr.read_neurone_data_info(self.path, self.number, self._protocol).n_samples
 
-    @Lazy
+    @property
     def n_channels(self):
         """
         :return: the number of channels, read from the session protocol
         :rtype: int
         """
-        return nr.read_neurone_data_info(self.path, self.number, self._protocol).n_channels
+        return nr.read_neurone_data_info(self.path,
+                                         self.number,
+                                         self._protocol).n_channels - len(self._dropped_channels)
 
     def clear_data(self):
         """
         Remove loaded data from memory
         """
         del self.data
+
+    # noinspection PyMissingOrEmptyDocstring
+    @doc_inherit
+    def drop_channels(self, channels_to_drop):
+        if self._has_data():
+            drop_indexes = sorted([indexOf(self.channels, channel) for channel in channels_to_drop
+                                   if channel in self.channels],
+                                  reverse=True)  # ignore channels that were dropped before
+            # noinspection PyAttributeOutsideInit
+            self.data = np.delete(self.data, drop_indexes, axis=1)
+        BaseContainer.drop_channels(self, channels_to_drop)
 
 
 @preloadable
@@ -124,6 +175,7 @@ class Session(BaseContainer):
     :type path: str
     """
     def __init__(self, path):
+        BaseContainer.__init__(self)
         self.path = path
         self._protocol = nr.read_neurone_protocol(self.path)
         self._get_meta()
@@ -138,7 +190,7 @@ class Session(BaseContainer):
     @property
     def event_codes(self):
         """
-        :return: all event codes used in the data as int32 in an numpy.ndarray
+        :return: all event codes used in the data as int32 in an :class:`numpy.ndarray`
         :rtype: numpy.ndarray
         """
         return np.unique(np.concatenate([phase.event_codes for phase in self.phases]))
@@ -146,19 +198,19 @@ class Session(BaseContainer):
     @Lazy
     def data(self):
         """
+        .. warning:: Calling this replaces the data attribute of the contained phases with a view on the concatenated
+             data to save memory. Keep this in mind when manipulating the contained sessions.
+
         :return: concatenated data of all phases with shape (samples, channels) in µV
         :rtype: numpy.ndarray
-
-        .. warning:: Calling this replaces the data attribute of the contained phases with a view on the concatenated
-                     data to save memory. Keep this in mind when manipulating the contained sessions.
         """
         phases = sorted(self.phases, key=lambda phase: phase.number)
         new_array = None
         slices = []
         for p in phases:
+            p.drop_channels(list(self._dropped_channels))
             if new_array is None:
-                new_array = np.copy(p.data)
-                del p.data
+                new_array = np.copy(p.data, order='C')
                 slices.append((0, len(p.data)))
             else:
                 old_length = len(new_array)
@@ -226,6 +278,27 @@ class Session(BaseContainer):
             "The number of channels shouldn't change between phases"
         return self.phases[0].n_channels if len(self.phases) > 0 else 0
 
+    # noinspection PyMissingOrEmptyDocstring
+    @doc_inherit
+    def drop_channels(self, channels_to_drop):
+        if self._has_data():
+            # noinspection PyAttributeOutsideInit
+            drop_indexes = sorted([indexOf(self.channels, channel) for channel in channels_to_drop
+                                   if channel in self.channels],
+                                  reverse=True)  # ignore channels that were dropped before
+            # noinspection PyAttributeOutsideInit
+            self.data = np.delete(self.data, drop_indexes, axis=1)
+            p_offset = 0
+            for phase in self.phases:
+                phase._extend_droplist(channels_to_drop)
+                data_length = phase.data.shape[0]
+                phase.data = self.data[p_offset:p_offset + data_length]
+                p_offset += data_length
+        else:
+            for phase in self.phases:
+                phase.drop_channels(channels_to_drop)
+        BaseContainer.drop_channels(self, channels_to_drop)
+
 
 @preloadable
 class Recording(BaseContainer):
@@ -236,6 +309,7 @@ class Recording(BaseContainer):
     :type path: str
     """
     def __init__(self, path):
+        BaseContainer.__init__(self)
         self.path = path
         self._find_sessions()
         
@@ -280,8 +354,9 @@ class Recording(BaseContainer):
             phases = sorted(s.phases, key=lambda phase: phase.number)
             phase_slices = []
             for p in phases:
+                p.drop_channels(list(self._dropped_channels))
                 if new_array is None:
-                    new_array = np.copy(p.data)
+                    new_array = np.copy(p.data, order='C')
                     phase_slices.append((0, len(p.data)))
                 else:
                     old_phase_length = len(new_array)
@@ -377,8 +452,37 @@ class Recording(BaseContainer):
         Returns the channels used in all sessions and makes sure they're equal
 
         :return: ordered list of all channel names, read from the session protocols
-        :rtype: List[str]
+        :rtype: list[str]
         """
         assert len(set([''.join(s.channels) for s in self.sessions])) <= 1, \
             "Channel names shouldn't change between sessions"
-        return self.sessions[0].channels if len(self.sessions) > 0 else 0
+        return [channel for channel in self.sessions[0].channels
+                if channel not in self._dropped_channels] if len(self.sessions) > 0 else 0
+
+    # noinspection PyMissingOrEmptyDocstring
+    @doc_inherit
+    def drop_channels(self, channels_to_drop):
+        if self._has_data():
+            # noinspection PyAttributeOutsideInit
+            drop_indexes = sorted([indexOf(self.channels, channel) for channel in channels_to_drop
+                                   if channel in self.channels],
+                                  reverse=True)  # ignore channels that were dropped before
+            # noinspection PyAttributeOutsideInit
+            self.data = np.delete(self.data, drop_indexes, axis=1)
+            s_offset = 0
+            p_offset = 0
+            # update views and droplists
+            for session in self.sessions:
+                session._extend_droplist(channels_to_drop)
+                data_length = session.data.shape[0]
+                session.data = self.data[s_offset:s_offset + data_length]
+                s_offset += data_length
+                for phase in session.phases:
+                    phase._extend_droplist(channels_to_drop)
+                    data_length = phase.data.shape[0]
+                    phase.data = self.data[p_offset:p_offset + data_length]
+                    p_offset += data_length
+        else:
+            for session in self.sessions:
+                session.drop_channels(channels_to_drop)
+        BaseContainer.drop_channels(self, channels_to_drop)

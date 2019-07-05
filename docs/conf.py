@@ -190,7 +190,8 @@ texinfo_documents = [
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
-    'mne': ('https://mne-tools.github.io/stable/', None)
+    'mne': ('https://mne-tools.github.io/stable/', None),
+    'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None)
 }
 
 # -- Options for autosummary extension ------------------------------------

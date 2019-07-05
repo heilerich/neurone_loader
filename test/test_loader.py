@@ -14,6 +14,12 @@ import os
 from functools import reduce
 import numpy as np
 
+try:
+    # noinspection PyPackageRequirements
+    import mock
+except ImportError:
+    import unittest.mock as mock
+
 from neurone_loader.loader import Recording, Session
 
 data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data')
@@ -136,3 +142,134 @@ class TestContainerHierarchy(TestCase):
 
     def tearDown(self):
         del self.rec
+
+
+class TestChannelDroppingPhase(TestCase):
+    class ChannelState:
+        channel_count = None
+        data = None
+        mask = None
+
+    def commonSetUp(self):
+        self.container = Recording(data_path)
+        self.invalid_channel = 'UnknownChannel'
+        self.save_samples = 100
+
+        index_one = np.random.randint(1, len(self.container.channels) - 1)
+        index_two = np.random.randint(4, len(self.container.channels))
+        while np.abs(index_one - index_two) < 3:
+            index_two = np.random.randint(4, len(self.container.channels))
+
+        self.valid_indexes = [index_one, index_one + 1, index_two]
+        self.valid_channels = [self.container.channels[i] for i in self.valid_indexes]
+
+        self.states = dict()
+
+    def setUp(self):
+        self.commonSetUp()
+        self.container = self.container.sessions[0].phases[0]
+
+    @mock.patch('logging.Logger.warning')
+    def test_warning_recording(self, mocker):
+        self.container.drop_channels([self.invalid_channel])
+        self.assertIn(self.invalid_channel, mocker.call_args_list[0][0][0])  # channel name in warning message
+
+    def save_state(self, container, state_name):
+        state = self.ChannelState()
+        state.channel_count = container.n_channels
+        state.data = container.data[:self.save_samples].copy()
+        state.mask = np.ones(state.data.shape[1], np.bool)
+        for i in self.valid_indexes:
+            state.mask[i] = False
+        self.states[state_name] = state
+
+    def check_state(self, container, state_name):
+        state = self.states[state_name]
+
+        self.assertEqual(state.channel_count - len(self.valid_channels), container.n_channels)
+        self.assertTrue(set(self.valid_channels).isdisjoint(set(container.channels)))
+
+        self.assertTrue(np.all(container.data[:self.save_samples] == state.data.T[state.mask].T))
+
+    def do_drop(self):
+        self.assertTrue(set(self.valid_channels).issubset(set(self.container.channels)))
+        # drop oneplus in separate step to test dropping in sequence?
+        self.container.drop_channels((self.valid_channels[0], self.valid_channels[2]))
+        self.container.drop_channels((self.valid_channels[1],))
+
+    def test_drop_before_loading(self):
+        self.save_state(self.container, 'main_container')
+        self.container.clear_data()
+        self.assertFalse(self.container._has_data())
+        self.do_drop()
+        self.check_state(self.container, 'main_container')
+
+    def test_drop_after_loading(self):
+        self.container.preload()
+        self.save_state(self.container, 'main_container')
+        self.assertTrue(self.container._has_data())
+        self.do_drop()
+        self.check_state(self.container, 'main_container')
+
+    def test_persistence(self):
+        self.save_state(self.container, 'main_container')
+        self.do_drop()
+        self.container.clear_data()
+        self.container.preload()
+        self.check_state(self.container, 'main_container')
+
+    def tearDown(self):
+        del self.container
+
+
+class TestChannelDroppingSession(TestChannelDroppingPhase):
+    def setUp(self):
+        self.commonSetUp()
+        self.container = self.container.sessions[0]
+
+    def test_persistence(self):
+        # Also test change propagation to phase
+        self.save_state(self.container.phases[0], 'phase0')
+        TestChannelDroppingPhase.test_persistence(self)
+        self.check_state(self.container.phases[0], 'phase0')
+
+    def test_drop_before_loading(self):
+        # Also test change propagation to phase
+        self.save_state(self.container.phases[0], 'phase0')
+        TestChannelDroppingPhase.test_drop_before_loading(self)
+        self.check_state(self.container.phases[0], 'phase0')
+
+    def test_drop_after_loading(self):
+        # Also test change propagation to phase
+        self.save_state(self.container.phases[0], 'phase0')
+        TestChannelDroppingPhase.test_drop_after_loading(self)
+        self.check_state(self.container.phases[0], 'phase0')
+
+
+class TestChannelDroppingRecording(TestChannelDroppingPhase):
+    def setUp(self):
+        self.commonSetUp()
+
+    def test_drop_before_loading(self):
+        # Also test change propagation to session and phase
+        self.save_state(self.container.sessions[0].phases[0], 'phase0')
+        self.save_state(self.container.sessions[0], 'session0')
+        TestChannelDroppingPhase.test_drop_before_loading(self)
+        self.check_state(self.container.sessions[0].phases[0], 'phase0')
+        self.check_state(self.container.sessions[0], 'session0')
+
+    def test_drop_after_loading(self):
+        # Also test change propagation to session and phase
+        self.save_state(self.container.sessions[0].phases[0], 'phase0')
+        self.save_state(self.container.sessions[0], 'session0')
+        TestChannelDroppingPhase.test_drop_after_loading(self)
+        self.check_state(self.container.sessions[0].phases[0], 'phase0')
+        self.check_state(self.container.sessions[0], 'session0')
+
+    def test_persistence(self):
+        # Also test change propagation to session and phase
+        self.save_state(self.container.sessions[0].phases[0], 'phase0')
+        self.save_state(self.container.sessions[0], 'session0')
+        TestChannelDroppingPhase.test_persistence(self)
+        self.check_state(self.container.sessions[0].phases[0], 'phase0')
+        self.check_state(self.container.sessions[0], 'session0')
