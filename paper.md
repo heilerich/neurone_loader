@@ -17,6 +17,7 @@ affiliations:
  - name: Translational Neurotechnology Lab, Department of Neurosurgery, University of Freiburg–Medical Center, Freiburg im Breisgau, Germany
    index: 1
 date: 05 July 2019
+bibliography: paper.bib
 ---
 
 # Summary
