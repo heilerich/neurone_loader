@@ -93,7 +93,7 @@ Testing
 To run the tests you must first get the test data and then you can run the test with the following commands.
 Please run them in the repository directory, not in the test subdirectory.
 
-To get the test data (~2.7GB) you need to install [wget](https://www.gnu.org/software/wget/). Then you can 
+To get the test data (~2.7GB) you need to install wget_. Then you can 
 download the data by running
 
 .. code:: bash
@@ -105,3 +105,5 @@ Then you can run the tests with
 .. code:: bash
 
    python -m unittest discover -s test -t .
+
+.. _wget: https://www.gnu.org/software/wget/
