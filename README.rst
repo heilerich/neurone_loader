@@ -28,7 +28,9 @@ NeuroneLoader
    :target: http://joss.theoj.org/papers/c71df4f24b732eabc11b3195a9a8c94d
    :alt: JOSS status
 
-NeuroneLoader is a python module for loading neurophysiological data recorded with Bittium NeurOne (formerly MegaEMG).
+NeuroneLoader is a python module for loading neurophysiological data recorded with Bittium NeurOne (formerly MegaEMG). It 
+therefore allows using the data in pure python processing workflows using the python scientifc software stack (e.g. `numpy
+<https://www.numpy.org/>`_) without the need of prior conversion using other (proprietary) software (e.g. MATLAB).
 It can also export it to container objects used by the popular `python-mne <https://mne-tools.github.io/stable/index.html>`_
 framework.
 
