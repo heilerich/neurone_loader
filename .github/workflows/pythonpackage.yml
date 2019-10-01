@@ -1,8 +1,8 @@
 name: Python package
 
 on:
-  release
-  types: [published]
+  release:
+    types: [published]
 
 evn:
   PYTHON_VERSION: 3.7
