@@ -1,3 +1,7 @@
+# 1.1.1
+
+* Documentation updates for JOSS review
+
 # 1.1.0
 
 * New channel dropping feature
