@@ -4,7 +4,7 @@ on:
   release:
     types: [published]
 
-evn:
+env:
   PYTHON_VERSION: 3.7
 
 jobs:
