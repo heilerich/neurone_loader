@@ -1,3 +1,7 @@
+# 1.1.5
+
+* Github workflow for automatic deployment to PyPI
+
 # 1.1.1
 
 * Documentation updates for JOSS review
