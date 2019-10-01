@@ -24,7 +24,13 @@ NeuroneLoader
    :target: https://pypi.org/project/neurone-loader/
    :alt: Supported Python Versions
 
-NeuroneLoader is a python module for loading neurophysiological data recorded with Bittium NeurOne (formerly MegaEMG).
+.. image:: http://joss.theoj.org/papers/c71df4f24b732eabc11b3195a9a8c94d/status.svg
+   :target: http://joss.theoj.org/papers/c71df4f24b732eabc11b3195a9a8c94d
+   :alt: JOSS status
+
+NeuroneLoader is a python module for loading neurophysiological data recorded with Bittium NeurOne (formerly MegaEMG). It 
+therefore allows using the data in pure python processing workflows using the python scientifc software stack (e.g. `numpy
+<https://www.numpy.org/>`_) without the need of prior conversion using other (proprietary) software (e.g. MATLAB).
 It can also export it to container objects used by the popular `python-mne <https://mne-tools.github.io/stable/index.html>`_
 framework.
 
@@ -78,19 +84,28 @@ Contributing
 
 If you encounter any problem feel free to open a issue_ on GitHub. If you found a bug and want to
 supply a fix or if you want to contribute a new feature open a `pull request`_. Just make sure that
-your code is not breaking any tests and you also supply tests for your code. To run the tests you
-must first get the test data:
+your code is not breaking any tests and you also supply tests for your code.
+
+.. _issue: https://github.com/heilerich/neurone_loader/issues
+.. _pull request: https://github.com/heilerich/neurone_loader/pulls
+
+Testing
+~~~~~~~
+
+To run the tests you must first get the test data and then you can run the test with the following commands.
+Please run them in the repository directory, not in the test subdirectory.
+
+To get the test data (~2.8GB) you need to install wget_. Then you can 
+download the data by running
 
 .. code:: bash
 
    bash test/get_test_data.sh
 
-Then you can run the tests with:
+Then you can run the tests with
 
 .. code:: bash
 
    python -m unittest discover -s test -t .
 
-
-.. _issue: https://github.com/heilerich/neurone_loader/issues
-.. _pull request: https://github.com/heilerich/neurone_loader/pulls
+.. _wget: https://www.gnu.org/software/wget/
