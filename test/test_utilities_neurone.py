@@ -18,7 +18,7 @@ import numpy as np
 
 from neurone_loader.neurone import *
 
-data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data')
+data_path = os.getenv('TEST_DATA_DIR', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data'))
 sessions = ['ses1', 'ses2']
 
 
@@ -104,6 +104,8 @@ class TestStability(TestCase):
         for result in results:
             key, shasum = result.get(timeout=20)
             self.assertEqual(hashes[key], shasum)
+
+        pool.close()
 
 
 def _hash_data(session, session_path, number):

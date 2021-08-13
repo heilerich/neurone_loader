@@ -1,4 +1,4 @@
-mne==0.17.0
-braindecode
+mne>=0.23.0
+braindecode>=0.5.1
 mock
 zodbpickle

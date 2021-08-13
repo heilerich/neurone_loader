@@ -22,7 +22,7 @@ except ImportError:
 
 from neurone_loader.loader import Recording, Session
 
-data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data')
+data_path = os.getenv('TEST_DATA_DIR', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data'))
 
 try:
     FileNotFoundError
@@ -178,7 +178,7 @@ class TestChannelDroppingPhase(TestCase):
         state = self.ChannelState()
         state.channel_count = container.n_channels
         state.data = container.data[:self.save_samples].copy()
-        state.mask = np.ones(state.data.shape[1], np.bool)
+        state.mask = np.ones(state.data.shape[1], np.bool_)
         for i in self.valid_indexes:
             state.mask[i] = False
         self.states[state_name] = state
