@@ -4,6 +4,3 @@ zodbpickle
 
 # need unrelease braindecode for dataset loader hotfix
 git+https://github.com/braindecode/braindecode@2dbd40cc7951934ad32892770536e360b6188920#egg=braindecode
-torch
-# need moabb because of broken requirements on unrelased braindecode
-moabb

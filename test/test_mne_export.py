@@ -16,8 +16,8 @@ import mne
 import numpy as np
 import sys
 
-# noinspection PyPackageRequirements
-from braindecode.datasets.bbci import BBCIDataset
+from .util import load_module
+bd = load_module("braindecode.datasets.bbci")
 
 try:
     # noinspection PyPackageRequirements
@@ -156,7 +156,7 @@ class TestChannelMapping(TestCase):
 class TestAgainstBBCI(TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.bbci_cnt = BBCIDataset(bbci_path).load()
+        cls.bbci_cnt = bd.BBCIDataset(bbci_path).load()
         cls.bbci_events = mne.find_events(cls.bbci_cnt)
 
         raw_rec = Recording(data_path)
