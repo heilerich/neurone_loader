@@ -1,4 +1,4 @@
-mne>=0.20.8
+mne==0.17.2
 mock
 zodbpickle
 
