@@ -319,7 +319,7 @@ class Recording(BaseContainer):
                         if os.path.isdir(os.path.join(self.path, dirname))
                         and 'Protocol.xml' in os.listdir(os.path.join(self.path, dirname))]
         assert len(session_dirs) > 0, "No sessions found in {}".format(self.path)
-        self.sessions = [Session(path) for path in session_dirs]
+        self.sessions = list(sorted([Session(path) for path in session_dirs], key=lambda s: s.time_start))
 
     @property
     def event_codes(self):
