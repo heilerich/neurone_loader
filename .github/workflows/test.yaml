@@ -9,13 +9,22 @@ on:
   pull_request: {}
 
 jobs:
-  test:
+  download-data:
+    name: Download Data
     runs-on: [self-hosted, linux]
+    steps:
+      - name: Get test data
+        run: bash test/get_test_data.sh
+
+  test:
+    name: Test (Python ${{ matrix.python}})
+    runs-on: [self-hosted, linux]
+    needs: download-data
+
     strategy:
       fail-fast: false
       matrix:
         python: [2.7, 3.6, 3.7, 3.8, 3.9]
-    name: Test (Python ${{ matrix.python}})
 
     steps:
       - name: Check out Git repository
@@ -30,8 +39,6 @@ jobs:
           pip install -r test/test_requirements.txt
           pip install .
           pip install coverage python-coveralls
-      - name: Get test data
-        run: bash test/get_test_data.sh
       - name: Run tests
         run: coverage run -m unittest discover -s test -t .
       - name: Coveralls
