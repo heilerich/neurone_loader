@@ -1,3 +1,14 @@
+# 1.1.6
+
+* Bugfix: Reproducible ordering of sessions
+
+  ⚠️  Session loading previously used `os.listdir` to find sessions. This function does not guarantee
+  any specific order, which might lead to inconsistencies between systems or even runs on the same
+  system. Sessions are now ordered chronological, i.e. according to their start time, which is
+  probably what most users expect.
+
+* Maintenance: Tests were migrated from Travis to GitHub Actions
+
 # 1.1.5
 
 * Github workflow for automatic deployment to PyPI
