@@ -44,6 +44,7 @@ jobs:
       - name: Run tests
         run: coverage run -m unittest discover -s test -t .
       - name: Coveralls
+        if: ${{ matrix.python != '2.7' }}
         run: coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
