@@ -13,6 +13,8 @@ jobs:
     name: Download Data
     runs-on: [self-hosted, linux]
     steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
       - name: Get test data
         run: bash test/get_test_data.sh
 
