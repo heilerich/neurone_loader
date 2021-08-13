@@ -1,13 +1,14 @@
 NeuroneLoader
 =============
 
-.. image:: https://travis-ci.org/heilerich/neurone_loader.svg?branch=master
+.. image:: https://github.com/heilerich/neurone_loader/actions/workflows/test.yaml/badge.svg?branch=master
    :target: https://travis-ci.org/heilerich/neurone_loader
    :alt: Build Status
 
-.. image:: https://coveralls.io/repos/github/heilerich/neurone_loader/badge.svg
-   :target: https://coveralls.io/github/heilerich/neurone_loader
+.. image:: https://coveralls.io/repos/github/heilerich/neurone_loader/badge.svg?branch=master
+   :target: https://coveralls.io/github/heilerich/neurone_loader?branch=master
    :alt: Coverage Status
+
 .. image:: https://readthedocs.org/projects/neurone-loader/badge/?version=latest
    :target: https://neurone-loader.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status

@@ -16,8 +16,8 @@ import mne
 import numpy as np
 import sys
 
-# noinspection PyPackageRequirements
-from braindecode.datasets.bbci import BBCIDataset
+from .util import load_module
+bd = load_module("braindecode.datasets.bbci")
 
 try:
     # noinspection PyPackageRequirements
@@ -28,8 +28,8 @@ except ImportError:
 from neurone_loader.loader import Recording, Session, Phase
 from neurone_loader.mne_export import UnknownChannelException
 
-data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data')
-bbci_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data', 'converted_1-1_250Hz.BBCI.mat')
+data_path = os.getenv('TEST_DATA_DIR', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data'))
+bbci_path = os.path.join(data_path, 'converted_1-1_250Hz.BBCI.mat')
 
 
 class TestRecording(TestCase):
@@ -156,7 +156,7 @@ class TestChannelMapping(TestCase):
 class TestAgainstBBCI(TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.bbci_cnt = BBCIDataset(bbci_path).load()
+        cls.bbci_cnt = bd.BBCIDataset(bbci_path).load()
         cls.bbci_events = mne.find_events(cls.bbci_cnt)
 
         raw_rec = Recording(data_path)
