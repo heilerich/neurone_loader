@@ -44,7 +44,15 @@ class TestDataReading(TestCase):
     def test_empty_file(self):
         session_path = os.path.join(data_path, 'empty_session')
         events = read_neurone_events(session_path, sampling_rate=1)
-        self.assertEqual(events, {'events': [], 'dtype': []})
+        events_dtype = np.dtype([('Revision', '<i4'), ('Type', '<i4'),
+                               ('SourcePort', '<i4'), ('ChannelNumber', '<i4'),
+                               ('Code', '<i4'), ('StartSampleIndex', '<i8'),
+                               ('StopSampleIndex', '<i8'), ('DescriptionLength', '<i8'),
+                               ('DescriptionOffset', '<i8'), ('DataLength', '<i8'),
+                               ('DataOffset', '<i8'), ('StartTime', '<i8'),
+                               ('StopTime', '<i8')])
+        empty_events = {'events': np.array([], dtype=events_dtype), 'dtype': events_dtype}
+        self.assertEqual(events, empty_events)
 
 
 class TestStability(TestCase):
