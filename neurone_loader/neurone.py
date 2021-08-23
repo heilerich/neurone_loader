@@ -304,7 +304,7 @@ def read_neurone_events(fpath, session_phase=1, sampling_rate=None):
 
     # convert array of event dicts to an array of tuples
     if len(events) == 0:
-        return {'events': [], 'dtype': []}
+        return {'events': np.array([], dtype=events_dtype), 'dtype': events_dtype}
     key_list = [k for k, v in events[0].items()]
     tmp = [tuple([e[k] for k in key_list]) for e in events]
     events = np.array(tmp, dtype=events_dtype)
