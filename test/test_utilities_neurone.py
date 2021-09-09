@@ -51,8 +51,8 @@ class TestDataReading(TestCase):
                                ('DescriptionOffset', '<i8'), ('DataLength', '<i8'),
                                ('DataOffset', '<i8'), ('StartTime', '<i8'),
                                ('StopTime', '<i8')])
-        empty_events = {'events': np.array([], dtype=events_dtype), 'dtype': events_dtype}
-        self.assertEqual(events, empty_events)
+        self.assertEqual(events['dtype'], events_dtype)
+        self.assertTrue(np.array_equal(events['events'], np.array([], dtype=events_dtype)))
 
 
 class TestStability(TestCase):
