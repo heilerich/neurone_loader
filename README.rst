@@ -2,7 +2,7 @@ NeuroneLoader
 =============
 
 .. image:: https://github.com/heilerich/neurone_loader/actions/workflows/test.yaml/badge.svg?branch=master
-   :target: https://travis-ci.org/heilerich/neurone_loader
+   :target: https://github.com/heilerich/neurone_loader/actions/workflows/test.yaml
    :alt: Build Status
 
 .. image:: https://coveralls.io/repos/github/heilerich/neurone_loader/badge.svg?branch=master
