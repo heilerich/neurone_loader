@@ -1,3 +1,7 @@
+# 1.1.7
+
+* Bugfix: A crash could occur when trying to load a phase with no events.
+
 # 1.1.6
 
 * Bugfix: Reproducible ordering of sessions
