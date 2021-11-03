@@ -41,6 +41,15 @@ class BaseContainer(MneExportable):
         """
         return self._protocol['meta']['sampling_rate'] if hasattr(self, '_protocol') else None
 
+    @property
+    def subject_info(self):
+        """
+        :return: subject information, read from the session protocol. Possible keys are
+                 `id`, `first_name`, `last_name`, `date_of_birth`
+        :rtype: dict
+        """
+        return self._protocol['meta']['subject'] if hasattr(self, '_protocol') else None
+
     def _protocol_channels(self):
         return self._protocol['channels'] if hasattr(self, '_protocol') else []
 
@@ -216,8 +225,10 @@ class Session(BaseContainer):
                 old_length = len(new_array)
                 shape = list(new_array.shape)
                 shape[0] += len(p.data)
-                new_array.resize(shape, refcheck=False)  # data is explicitly copied above and following slices are
-                new_array[-len(p.data):] = p.data  # appended hence also copied, this should be fine
+                # data is explicitly copied above and following slices are
+                new_array.resize(shape, refcheck=False)
+                # appended hence also copied, this should be fine
+                new_array[-len(p.data):] = p.data # pylint: disable=unsupported-assignment-operation
                 slices.append((old_length, old_length + len(p.data)))
             del p.data
 
@@ -362,8 +373,10 @@ class Recording(BaseContainer):
                     old_phase_length = len(new_array)
                     shape = list(new_array.shape)
                     shape[0] += len(p.data)
-                    new_array.resize(shape, refcheck=False)  # data is explicitly copied above and following slices are
-                    new_array[-len(p.data):] = p.data  # appended hence also copied, this should be fine
+                    # data is explicitly copied above and following slices are
+                    new_array.resize(shape, refcheck=False)
+                    # appended hence also copied, this should be fine
+                    new_array[-len(p.data):] = p.data  # pylint: disable=unsupported-assignment-operation
                     phase_slices.append((old_phase_length, old_phase_length + len(p.data)))
                 del p.data
 

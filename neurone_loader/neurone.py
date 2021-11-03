@@ -96,20 +96,35 @@ def read_neurone_protocol(fpath):
                'time_stop': phase.findall("xmlns:StopDateTime", namespaces=ns2)[0].text}
               for phase in doc_root.findall("xmlns:TableSessionPhase", namespaces=ns2)]
 
+    subject_info = doc_root.find('xmlns:TablePerson', namespaces=ns2)
+    subject_id = subject_info.find('xmlns:PersonID', namespaces=ns2).text
+    subject_first_name = subject_info.find('xmlns:FirstName', namespaces=ns2).text
+    subject_last_name = subject_info.find('xmlns:LastName', namespaces=ns2).text
+    subject_dob = subject_info.find('xmlns:DateOfBirth', namespaces=ns2).text
+
     # --------------------------------------------------
     # Package the information
     # --------------------------------------------------
     meta = {}
 
-    def _convert_time(time_str):
-        time_str = time_str[0:time_str.index('+')]
+    def _convert_time(inp_str):
+        p_index = inp_str.index('+')
+        time_str = inp_str[0:p_index]
+        utc_offset_str = inp_str[p_index:]
         if len(time_str) > 26:
             time_str = time_str[0:26]
-        return datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%f")
+        return datetime.fromisoformat(f"{time_str}{utc_offset_str}")
 
     meta["time_start"] = _convert_time(time_start)
     meta["time_stop"] = _convert_time(time_stop)
     meta["sampling_rate"] = sampling_rate
+
+    meta["subject"] = dict(
+        id=subject_id,
+        first_name=subject_first_name,
+        last_name=subject_last_name,
+        date_of_birth=_convert_time(subject_dob)
+    )
     
     for phase in phases:
         phase['time_start'] = _convert_time(phase['time_start'])

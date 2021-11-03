@@ -195,7 +195,27 @@ class MneExportable(ABC):
 
         cnt = cnt.add_channels([stim_cnt])
 
+        if self.subject_info is not None:
+            mne_sub_info = dict()
+            mne_sub_info['his_id'] = self.subject_info['id']
+            mne_sub_info['last_name'] = self.subject_info['last_name']
+            mne_sub_info['first_name'] = self.subject_info['first_name']
+            dob = self.subject_info['date_of_birth']
+            if dob is not None:
+                mne_sub_info['birthday'] = (dob.year, dob.month, dob.day)
+            cnt.info['subject_info'] = mne_sub_info
+
         return cnt
+
+    @property
+    @abc.abstractmethod
+    def subject_info(self):
+        """
+        Abstract Property
+
+        :return: should contain subject_info dict with keys `id`, `first_name`, `last_name`, `date_of_birth`
+        :rtype: dict
+        """
 
     @property
     @abc.abstractmethod
