@@ -13,15 +13,13 @@ Provides the metaclass `MneExportable` that allows subclasses implementing all t
 to be converted to a `mne.io.RawArray`.
 """
 
-import numpy as np
 import abc
-
 from datetime import timezone
 from copy import deepcopy
-from .util import logger
 
-# compatible with Python 2 *and* 3:
-ABC = abc.ABCMeta('ABC', (object,), {'__slots__': ()})
+import numpy as np
+
+from .util import logger
 
 
 class UnknownChannelException(Exception):
@@ -34,7 +32,7 @@ class UnknownChannelException(Exception):
     pass
 
 
-class MneExportable(ABC):
+class MneExportable(abc.ABC):
     """
 
     A metaclass that provides a function allowing objects that expose data, events, channels and sampling_rate
@@ -214,7 +212,7 @@ class MneExportable(ABC):
                 offset = f"{offset[:3]}:{offset[3:5]}"
                 tstart = (tstart - tstart.utcoffset()).replace(tzinfo=timezone.utc)
                 cnt.info['utc_offset'] = offset
-            cnt.info['meas_date'] = tstart
+            cnt.set_meas_date(tstart)
 
         return cnt
 

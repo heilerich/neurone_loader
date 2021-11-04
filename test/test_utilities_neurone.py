@@ -10,7 +10,7 @@
 # ------------------------------------------------------------------------------
 
 from unittest import TestCase
-from zodbpickle import pickle
+import pickle
 import os
 from hashlib import sha256
 from multiprocessing import Pool

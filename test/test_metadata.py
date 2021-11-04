@@ -11,11 +11,14 @@
 
 import os
 import datetime
+import logging
 from unittest import TestCase
 
 from neurone_loader.neurone import read_neurone_protocol
 from neurone_loader.loader import Recording
+from neurone_loader.util import logger
 
+logger.setLevel(logging.ERROR)
 data_path = os.getenv('TEST_DATA_DIR', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data'))
 
 class TestMetadataReading(TestCase):

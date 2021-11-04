@@ -10,6 +10,7 @@
 # ------------------------------------------------------------------------------
 from unittest import TestCase
 import os
+import logging
 from functools import reduce
 from datetime import timezone
 # noinspection PyPackageRequirements
@@ -28,7 +29,9 @@ except ImportError:
 
 from neurone_loader.loader import Recording, Session, Phase
 from neurone_loader.mne_export import UnknownChannelException
+from neurone_loader.util import logger
 
+logger.setLevel(logging.ERROR)
 data_path = os.getenv('TEST_DATA_DIR', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_data'))
 bbci_path = os.path.join(data_path, 'converted_1-1_250Hz.BBCI.mat')
 
