@@ -15,4 +15,4 @@ Use :py:class:`Recording`, :py:class:`Session` or :py:class:`Phase` to represent
 
 from .loader import Recording, Session, Phase
 
-__version__ = '1.1.7'
+__version__ = '2.0.0'
