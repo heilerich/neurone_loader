@@ -11,6 +11,7 @@
 from unittest import TestCase
 import os
 from functools import reduce
+from datetime import timezone
 # noinspection PyPackageRequirements
 import mne
 import numpy as np
@@ -86,6 +87,19 @@ class TestRecording(TestCase):
         with self.assertRaises(AssertionError):
             # noinspection PyTypeChecker
             self.container.to_mne(substitute_zero_events_with='not_int')
+
+    def test_start_time(self):
+        start_time = self.container.time_start
+        offset = start_time.strftime('%z')
+        offset = f"{offset[:3]}:{offset[3:5]}"
+
+        start_time_utc = (start_time - start_time.utcoffset()).replace(tzinfo=timezone.utc)
+        self.assertEqual(self.cnt.info['meas_date'], start_time_utc)
+
+        if offset == ':':
+            self.assertFalse('utc_offset' not in self.cnt.info)
+        else:
+            self.assertEqual(self.cnt.info['utc_offset'], offset)
 
 
 class TestSession(TestRecording):

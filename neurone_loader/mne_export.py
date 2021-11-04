@@ -15,6 +15,8 @@ to be converted to a `mne.io.RawArray`.
 
 import numpy as np
 import abc
+
+from datetime import timezone
 from copy import deepcopy
 from .util import logger
 
@@ -205,6 +207,15 @@ class MneExportable(ABC):
                 mne_sub_info['birthday'] = (dob.year, dob.month, dob.day)
             cnt.info['subject_info'] = mne_sub_info
 
+        if self.time_start is not None:
+            tstart = self.time_start
+            if tstart.tzinfo is not None:
+                offset = tstart.strftime('%z')
+                offset = f"{offset[:3]}:{offset[3:5]}"
+                tstart = (tstart - tstart.utcoffset()).replace(tzinfo=timezone.utc)
+                cnt.info['utc_offset'] = offset
+            cnt.info['meas_date'] = tstart
+
         return cnt
 
     @property
@@ -215,6 +226,16 @@ class MneExportable(ABC):
 
         :return: should contain subject_info dict with keys `id`, `first_name`, `last_name`, `date_of_birth`
         :rtype: dict
+        """
+
+    @property
+    @abc.abstractmethod
+    def time_start(self):
+        """
+        Abstract Property
+
+        :return: should contain start time of recording
+        :rtype: datetime
         """
 
     @property

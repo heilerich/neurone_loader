@@ -50,6 +50,22 @@ class BaseContainer(MneExportable):
         """
         return self._protocol['meta']['subject'] if hasattr(self, '_protocol') else None
 
+    @property
+    def time_start(self):
+        """
+        :return: recording start, read from the session protocol
+        :rtype: datetime
+        """
+        return self._time_start if hasattr(self, '_time_start') else None
+
+    @property
+    def time_stop(self):
+        """
+        :return: recording end, read from the session protocol
+        :rtype: datetime
+        """
+        return self._time_stop if hasattr(self, '_time_stop') else None
+
     def _protocol_channels(self):
         return self._protocol['channels'] if hasattr(self, '_protocol') else []
 
@@ -110,8 +126,8 @@ class Phase(BaseContainer):
             self._protocol = nr.read_neurone_protocol(self.path)
         else:
             self._protocol = protocol
-        self.time_start = phase['time_start']
-        self.time_stop = phase['time_stop']
+        self._time_start = phase['time_start']
+        self._time_stop = phase['time_stop']
 
     @Lazy
     def events(self):
@@ -190,8 +206,8 @@ class Session(BaseContainer):
         self._get_meta()
 
     def _get_meta(self):
-        self.time_start = self._protocol['meta']['time_start']
-        self.time_stop = self._protocol['meta']['time_stop']
+        self._time_start = self._protocol['meta']['time_start']
+        self._time_stop = self._protocol['meta']['time_stop']
         assert len(self._protocol['phases']) > 0, \
             "Session at {} has no phases".format(self.path)
         self.phases = [Phase(self.path, p, self._protocol) for p in self._protocol['phases']]
@@ -331,6 +347,8 @@ class Recording(BaseContainer):
                         and 'Protocol.xml' in os.listdir(os.path.join(self.path, dirname))]
         assert len(session_dirs) > 0, "No sessions found in {}".format(self.path)
         self.sessions = list(sorted([Session(path) for path in session_dirs], key=lambda s: s.time_start))
+        self._time_start = self.sessions[0].time_start if len(self.sessions) > 0 else None
+        self._time_stop = self.sessions[-1].time_stop if len(self.sessions) > 0 else None
 
     @property
     def event_codes(self):
