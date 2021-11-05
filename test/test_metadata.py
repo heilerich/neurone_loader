@@ -12,9 +12,10 @@
 import os
 import datetime
 import logging
+import datetime
 from unittest import TestCase
 
-from neurone_loader.neurone import read_neurone_protocol
+from neurone_loader.neurone import read_neurone_protocol, _convert_time
 from neurone_loader.loader import Recording
 from neurone_loader.util import logger
 
@@ -37,6 +38,17 @@ class TestMetadataReading(TestCase):
         self.assertEqual(subject_info['id'], 'FeHeSEP1')
         self.assertIsNone(subject_info['first_name'])
         self.assertIsNone(subject_info['last_name'])
+
+    def test_convert_time(self):
+        fixtures = [
+            ('1979-01-01T00:00:00+02:00', datetime.datetime(1979, 1, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200)))),
+            ('1979-01-01T00:00:00-02:00', datetime.datetime(1979, 1, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=79200)))),
+            ('1979-01-01T00:00:00.00-02:00', datetime.datetime(1979, 1, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=79200)))),
+            ('1979-01-01T00:00:00.00000000000000000-02:00', datetime.datetime(1979, 1, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=79200)))),
+            ('2015-11-26T13:01:15.32988', datetime.datetime(2015, 11, 26, 13, 1, 15, 329880))
+        ]
+        for test_str, expected_result in fixtures:
+            self.assertEqual(_convert_time(test_str), expected_result)
 
 class TestMetadataExport(TestCase):
     @classmethod

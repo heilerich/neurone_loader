@@ -107,14 +107,6 @@ def read_neurone_protocol(fpath):
     # --------------------------------------------------
     meta = {}
 
-    def _convert_time(inp_str):
-        p_index = inp_str.index('+')
-        time_str = inp_str[0:p_index]
-        utc_offset_str = inp_str[p_index:]
-        if len(time_str) > 26:
-            time_str = time_str[0:26]
-        return datetime.fromisoformat(f"{time_str}{utc_offset_str}")
-
     meta["time_start"] = _convert_time(time_start)
     meta["time_stop"] = _convert_time(time_stop)
     meta["sampling_rate"] = sampling_rate
@@ -132,6 +124,23 @@ def read_neurone_protocol(fpath):
 
     return {'channels': channel_names, 'meta': meta, 'phases': phases}
 
+def _convert_time(inp_str):
+    """Converts ISO timestrings from protocols to datetime objects"""
+    p_index = inp_str.find('+')
+    if p_index == -1 and inp_str.count('-') == 3:
+        p_index = inp_str.rfind('-')
+    if p_index >= 0:
+        time_str = inp_str[0:p_index]
+        utc_offset_str = inp_str[p_index:]
+    else:
+        time_str = inp_str
+        utc_offset_str = ''
+    if len(time_str) > 26:
+        time_str = time_str[0:26]
+    elif len(time_str) == 19:
+        time_str += '.'
+    time_str = time_str.ljust(26, '0')
+    return datetime.fromisoformat(f"{time_str}{utc_offset_str}")
 
 def read_neurone_data(fpath, session_phase=1, protocol=None):
     """
