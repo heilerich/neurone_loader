@@ -1,3 +1,7 @@
+# 2.0.1
+
+* Bugfix: Fixes parsing errors due to diversly formatted date strings in the NeurOne protocol files.
+
 # 2.0.0
 
 * ⚠️  This release drops support for end-of-life python versions, most notably Python 2.7. It also
